@@ -1,6 +1,11 @@
-import { stocks, type Stock, type InsertStock, type DashboardStats } from "@shared/schema";
+import { stocks, users, type Stock, type InsertStock, type DashboardStats, type User, type InsertUser } from "@shared/schema";
 
 export interface IStorage {
+  // User methods
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  
+  // Stock methods
   getAllStocks(): Promise<Stock[]>;
   getStock(id: number): Promise<Stock | undefined>;
   getStockBySymbol(symbol: string): Promise<Stock | undefined>;
@@ -11,16 +16,105 @@ export interface IStorage {
   getLowerSignals(): Promise<Stock[]>;
   getFavoriteStocks(): Promise<Stock[]>;
   getDashboardStats(): Promise<DashboardStats>;
+  
+  // Real-time filtering methods
+  getStocksNearBOSCHOCH(proximityPoints: number): Promise<Stock[]>;
+  updateStockPrices(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
   private stocks: Map<number, Stock>;
-  private currentId: number;
+  private users: Map<number, User>;
+  private currentStockId: number;
+  private currentUserId: number;
 
   constructor() {
     this.stocks = new Map();
-    this.currentId = 1;
+    this.users = new Map();
+    this.currentStockId = 1;
+    this.currentUserId = 1;
+    this.initializeUsers();
     this.initializeMockData();
+  }
+
+  private initializeUsers() {
+    // Add the specified users
+    const adminUser: User = {
+      id: this.currentUserId++,
+      username: "kunjan",
+      password: "K9016078282D", // In production, this should be hashed
+      role: "admin",
+      createdAt: new Date()
+    };
+    
+    const secondaryUser: User = {
+      id: this.currentUserId++,
+      username: "kantidabhi",
+      password: "kantidabhi", // In production, this should be hashed
+      role: "user",
+      createdAt: new Date()
+    };
+    
+    this.users.set(adminUser.id, adminUser);
+    this.users.set(secondaryUser.id, secondaryUser);
+  }
+
+  // User methods
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(user => user.username === username);
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const id = this.currentUserId++;
+    const user: User = {
+      ...insertUser,
+      id,
+      role: insertUser.role ?? "user",
+      createdAt: new Date()
+    };
+    this.users.set(id, user);
+    return user;
+  }
+
+  // Enhanced stock filtering methods
+  async getStocksNearBOSCHOCH(proximityPoints: number = 5): Promise<Stock[]> {
+    return Array.from(this.stocks.values()).filter(stock => {
+      // Only show stocks with BOS/CHOCH in 2+ timeframes
+      if (stock.timeframes.length < 2) return false;
+      
+      // Check if price is within proximity to BOS level
+      return Math.abs(stock.price - stock.bosLevel) <= proximityPoints;
+    });
+  }
+
+  async updateStockPrices(): Promise<void> {
+    // Simulate real-time price updates
+    const stockEntries = Array.from(this.stocks.entries());
+    for (const [id, stock] of stockEntries) {
+      const priceChange = (Math.random() - 0.5) * 10; // Random price change
+      const newPrice = Math.max(stock.price + priceChange, 1);
+      const change = newPrice - stock.price;
+      const changePercent = (change / stock.price) * 100;
+      
+      // Update distance from BOS level
+      const distance = Math.abs(newPrice - stock.bosLevel);
+      
+      // Remove stock if it moves more than 6 points away
+      if (distance > 6) {
+        continue; // Skip this update to simulate removal
+      }
+      
+      const updatedStock: Stock = {
+        ...stock,
+        price: newPrice,
+        change,
+        changePercent,
+        distance,
+        lastUpdated: new Date()
+      };
+      
+      this.stocks.set(id, updatedStock);
+    }
   }
 
   private initializeMockData() {
@@ -185,8 +279,13 @@ export class MemStorage implements IStorage {
   }
 
   async createStock(insertStock: InsertStock): Promise<Stock> {
-    const id = this.currentId++;
-    const stock: Stock = { ...insertStock, id };
+    const id = this.currentStockId++;
+    const stock: Stock = { 
+      ...insertStock, 
+      id,
+      isFavorite: insertStock.isFavorite ?? false,
+      lastUpdated: new Date()
+    };
     this.stocks.set(id, stock);
     return stock;
   }

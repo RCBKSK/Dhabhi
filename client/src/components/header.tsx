@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
 
 interface HeaderProps {
   searchQuery: string;
@@ -17,6 +18,26 @@ interface HeaderProps {
 }
 
 const timeframes = ["5m", "15m", "30m", "45m", "1h", "2h", "4h", "1D"];
+
+function UserInfo() {
+  const { user, logout, isLoggingOut } = useAuth();
+  
+  return (
+    <div className="flex items-center space-x-2 bg-slate-700 px-3 py-2 rounded-lg">
+      <User className="h-4 w-4 text-slate-400" />
+      <span className="text-sm text-white">{user?.username}</span>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={logout}
+        disabled={isLoggingOut}
+        className="p-1 h-auto hover:bg-slate-600"
+      >
+        <LogOut className="h-4 w-4 text-slate-400 hover:text-slate-200 transition-colors" />
+      </Button>
+    </div>
+  );
+}
 
 export default function Header({
   searchQuery,
@@ -76,11 +97,7 @@ export default function Header({
           </div>
           
           {/* User Info */}
-          <div className="flex items-center space-x-2 bg-slate-700 px-3 py-2 rounded-lg">
-            <User className="h-4 w-4 text-slate-400" />
-            <span className="text-sm text-white">kunjan</span>
-            <LogOut className="h-4 w-4 text-slate-400 hover:text-slate-200 cursor-pointer transition-colors" />
-          </div>
+          <UserInfo />
         </div>
       </div>
       
