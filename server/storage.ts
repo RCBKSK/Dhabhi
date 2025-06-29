@@ -1,4 +1,5 @@
 import { stocks, users, type Stock, type InsertStock, type DashboardStats, type User, type InsertUser } from "@shared/schema";
+import { stockDataService } from "./stock-service";
 
 export interface IStorage {
   // User methods
@@ -34,7 +35,9 @@ export class MemStorage implements IStorage {
     this.currentStockId = 1;
     this.currentUserId = 1;
     this.initializeUsers();
-    this.initializeMockData();
+    this.initializeWithRealData().catch(() => {
+      console.log("Using fallback initialization");
+    });
   }
 
   private initializeUsers() {
@@ -88,32 +91,69 @@ export class MemStorage implements IStorage {
   }
 
   async updateStockPrices(): Promise<void> {
-    // Simulate real-time price updates
-    const stockEntries = Array.from(this.stocks.entries());
-    for (const [id, stock] of stockEntries) {
-      const priceChange = (Math.random() - 0.5) * 10; // Random price change
-      const newPrice = Math.max(stock.price + priceChange, 1);
-      const change = newPrice - stock.price;
-      const changePercent = (change / stock.price) * 100;
-      
-      // Update distance from BOS level
-      const distance = Math.abs(newPrice - stock.bosLevel);
-      
-      // Remove stock if it moves more than 6 points away
-      if (distance > 6) {
-        continue; // Skip this update to simulate removal
+    if (stockDataService.shouldUpdateCache()) {
+      await this.refreshWithRealData();
+    }
+  }
+
+  private async initializeWithRealData() {
+    try {
+      console.log("Initializing with real NSE data...");
+      const realStocks = await stockDataService.getAnalyzedStocks();
+      console.log(`Found ${realStocks.length} stocks with valid SMC signals`);
+      realStocks.forEach(stock => this.createStock(stock));
+    } catch (error) {
+      console.log("Failed to fetch real NSE data, initializing with sample data");
+      this.initializeFallbackData();
+    }
+  }
+
+  private initializeFallbackData() {
+    const fallbackStocks: InsertStock[] = [
+      {
+        symbol: "RELIANCE",
+        price: 2485.30,
+        change: 12.45,
+        changePercent: 0.5,
+        bosLevel: 2492.15,
+        distance: 6.85,
+        target: 2520.00,
+        risk: 2465.00,
+        trend: "BULLISH",
+        signalType: "UPPER",
+        timeframes: ["5m", "30m", "1h"],
+        isFavorite: true,
+      },
+      {
+        symbol: "TATAMOTORS",
+        price: 635.15,
+        change: -4.20,
+        changePercent: -0.7,
+        bosLevel: 630.80,
+        distance: 4.35,
+        target: 610.00,
+        risk: 650.00,
+        trend: "BEARISH",
+        signalType: "LOWER",
+        timeframes: ["5m", "30m", "1h"],
+        isFavorite: true,
       }
+    ];
+    
+    fallbackStocks.forEach(stock => this.createStock(stock));
+  }
+
+  private async refreshWithRealData() {
+    try {
+      const realStocks = await stockDataService.getAnalyzedStocks();
       
-      const updatedStock: Stock = {
-        ...stock,
-        price: newPrice,
-        change,
-        changePercent,
-        distance,
-        lastUpdated: new Date()
-      };
+      // Clear existing stocks and reload with fresh data
+      this.stocks.clear();
+      this.currentStockId = 1;
       
-      this.stocks.set(id, updatedStock);
+      realStocks.forEach(stock => this.createStock(stock));
+    } catch (error) {
+      console.log("Failed to refresh real data");
     }
   }
 

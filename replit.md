@@ -92,7 +92,12 @@ The application supports real-time updates through automatic refresh intervals a
 
 ```
 Changelog:
-- June 29, 2025. Initial setup
+- June 29, 2025. Initial setup with mock data
+- June 29, 2025. Added authentication system (kunjan/K9016078282D, kantidabhi/kantidabhi)
+- June 29, 2025. Implemented real NSE stock data integration with SMC analysis
+- June 29, 2025. Added Fair Value Gap detection and liquidity zone analysis
+- June 29, 2025. Enhanced filtering: only shows stocks with BOS/CHOCH in 2+ timeframes
+- June 29, 2025. Implemented auto-removal when price moves 5-6 points from BOS level
 ```
 
 ## User Preferences

@@ -39,13 +39,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, message: "Logged out successfully" });
   });
 
-  // Get all stocks
+  // Get all stocks (filtered by proximity to BOS/CHOCH)
   app.get("/api/stocks", async (req, res) => {
     try {
-      const stocks = await storage.getAllStocks();
+      const proximityPoints = parseInt(req.query.proximity as string) || 5;
+      const stocks = await storage.getStocksNearBOSCHOCH(proximityPoints);
       res.json(stocks);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch stocks" });
+    }
+  });
+
+  // Update stock prices with real NSE data
+  app.post("/api/stocks/update-prices", async (req, res) => {
+    try {
+      await storage.updateStockPrices();
+      res.json({ success: true, message: "Real NSE stock data updated" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update NSE data" });
     }
   });
 

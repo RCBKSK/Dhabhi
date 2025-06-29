@@ -22,14 +22,22 @@ export default function Dashboard() {
     toggleFavorite,
   } = useStocks(searchQuery);
 
-  // Auto-refresh functionality
+  // Auto-refresh functionality with real NSE data updates
   useEffect(() => {
     if (!autoRefresh) return;
 
-    const interval = setInterval(() => {
-      refetch();
-    }, 120000); // 2 minutes
+    const updateData = async () => {
+      try {
+        // Trigger backend to fetch fresh NSE data
+        await fetch('/api/stocks/update-prices', { method: 'POST' });
+        refetch();
+      } catch (error) {
+        console.log('Update failed, retrying...');
+        refetch();
+      }
+    };
 
+    const interval = setInterval(updateData, 120000); // 2 minutes
     return () => clearInterval(interval);
   }, [autoRefresh, refetch]);
 
