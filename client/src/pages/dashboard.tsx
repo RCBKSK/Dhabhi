@@ -3,6 +3,8 @@ import Header from "@/components/header";
 import StatsOverview from "@/components/stats-overview";
 import TradingPanels from "@/components/trading-panels";
 import FavoritesSection from "@/components/favorites-section";
+import DeepTrendPanel from "@/components/deep-trend-panel";
+import StockScreener from "@/components/stock-screener";
 import { useStocks } from "@/hooks/use-stocks";
 
 export default function Dashboard() {
@@ -10,6 +12,14 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTimeframes, setSelectedTimeframes] = useState(["5m", "30m", "1h"]);
   const [proximityFilter, setProximityFilter] = useState("±5 points");
+  const [screenerFilters, setScreenerFilters] = useState({
+    sectors: [],
+    marketCap: "all",
+    trendDirection: "all",
+    confidenceLevel: "all",
+    signalStrength: [1, 5],
+    proximityRange: [0, 10]
+  });
 
   const {
     allStocks,
@@ -76,6 +86,28 @@ export default function Dashboard() {
       
       <main className="p-6">
         <StatsOverview stats={dashboardStats} />
+        
+        {/* Stock Screener */}
+        <div className="mb-6">
+          <StockScreener
+            filters={screenerFilters}
+            onFiltersChange={setScreenerFilters}
+            activeFiltersCount={
+              screenerFilters.sectors.length +
+              (screenerFilters.marketCap !== "all" ? 1 : 0) +
+              (screenerFilters.trendDirection !== "all" ? 1 : 0) +
+              (screenerFilters.confidenceLevel !== "all" ? 1 : 0) +
+              (screenerFilters.signalStrength[0] !== 1 || screenerFilters.signalStrength[1] !== 5 ? 1 : 0) +
+              (screenerFilters.proximityRange[0] !== 0 || screenerFilters.proximityRange[1] !== 10 ? 1 : 0)
+            }
+          />
+        </div>
+
+        {/* Deep Trend Analysis Panel */}
+        <div className="mb-6">
+          <DeepTrendPanel />
+        </div>
+        
         <TradingPanels
           upperSignals={upperSignals}
           lowerSignals={lowerSignals}

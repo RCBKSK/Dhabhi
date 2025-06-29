@@ -98,6 +98,8 @@ Changelog:
 - June 29, 2025. Added Fair Value Gap detection and liquidity zone analysis
 - June 29, 2025. Enhanced filtering: only shows stocks with BOS/CHOCH in 2+ timeframes
 - June 29, 2025. Implemented auto-removal when price moves 5-6 points from BOS level
+- June 29, 2025. Added enhanced SMC features: trend analysis matrix, proximity zones, swing targets, scan clock
+- June 29, 2025. Phase 2: Implementing live notifications, deep trend panel, stock screener, and watchlists
 ```
 
 ## User Preferences

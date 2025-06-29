@@ -68,3 +68,32 @@ export type TrendAnalysis = {
 };
 
 export type ProximityZone = "NEAR_UPPER_BOS" | "NEAR_LOWER_BOS" | "NEUTRAL";
+
+export type NotificationType = "BOS_ENTRY" | "BOS_BREAK" | "FVG_MITIGATED" | "TREND_CHANGE" | "PRICE_ALERT";
+
+export type NotificationSettings = {
+  bosEntry: boolean;
+  bosBreak: boolean;
+  fvgMitigated: boolean;
+  trendChange: boolean;
+  priceAlerts: boolean;
+  favoriteStocksOnly: boolean;
+};
+
+export type Notification = {
+  id: string;
+  stockSymbol: string;
+  type: NotificationType;
+  message: string;
+  timestamp: Date;
+  read: boolean;
+  priority: "LOW" | "MEDIUM" | "HIGH";
+};
+
+export type TrendQuality = {
+  symbol: string;
+  timeframes: { [tf: string]: "BULLISH" | "BEARISH" | "NEUTRAL" };
+  alignmentScore: number; // 0-1 score based on timeframe alignment
+  confidence: "LOW" | "MEDIUM" | "HIGH";
+  signalStrength: number; // 1-5 rating
+};

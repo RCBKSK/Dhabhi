@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertStockSchema, loginSchema } from "@shared/schema";
+import { insertStockSchema, loginSchema, type TrendQuality } from "@shared/schema";
+import { notificationService } from "./websocket";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -132,6 +133,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(filtered);
     } catch (error) {
       res.status(500).json({ message: "Failed to search stocks" });
+    }
+  });
+
+  // Notification routes
+  app.get("/api/notifications", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 20;
+      const notifications = notificationService.getRecentNotifications(limit);
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get("/api/notifications/unread-count", async (req, res) => {
+    try {
+      const count = notificationService.getUnreadCount();
+      res.json({ count });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch unread count" });
+    }
+  });
+
+  app.patch("/api/notifications/:id/read", async (req, res) => {
+    try {
+      const id = req.params.id;
+      notificationService.markNotificationAsRead(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  // Deep trend analysis
+  app.get("/api/trends/analysis", async (req, res) => {
+    try {
+      const stocks = await storage.getAllStocks();
+      const trendAnalysis: TrendQuality[] = stocks.map(stock => {
+        let trends = {};
+        let alignmentScore = 0;
+        
+        if (stock.trendAnalysis) {
+          try {
+            trends = JSON.parse(stock.trendAnalysis);
+            const trendValues = Object.values(trends);
+            const bullishCount = trendValues.filter(t => t === 'BULLISH').length;
+            const bearishCount = trendValues.filter(t => t === 'BEARISH').length;
+            const totalCount = trendValues.length;
+            
+            alignmentScore = Math.max(bullishCount, bearishCount) / totalCount;
+          } catch (e) {
+            trends = {};
+          }
+        }
+
+        return {
+          symbol: stock.symbol,
+          timeframes: trends,
+          alignmentScore,
+          confidence: alignmentScore > 0.7 ? "HIGH" : alignmentScore > 0.5 ? "MEDIUM" : "LOW",
+          signalStrength: Math.round(alignmentScore * 5)
+        };
+      });
+
+      res.json(trendAnalysis);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch trend analysis" });
     }
   });
 

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import NotificationPanel from "./notification-panel";
 
 interface HeaderProps {
   searchQuery: string;
@@ -144,6 +145,7 @@ export default function Header({
           <span className="text-sm text-slate-400">
             Last updated: <span className="text-white">{currentTime}</span>
           </span>
+          <NotificationPanel />
           <Button
             onClick={onRefresh}
             className="bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium transition-colors"

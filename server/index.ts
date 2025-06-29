@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { createServer } from "http";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { notificationService } from "./websocket";
 
 const app = express();
 app.use(express.json());
@@ -37,7 +39,11 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  const httpServer = createServer(app);
   const server = await registerRoutes(app);
+  
+  // Initialize WebSocket notification service
+  notificationService.init(httpServer);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -51,7 +57,7 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
-    await setupVite(app, server);
+    await setupVite(app, httpServer);
   } else {
     serveStatic(app);
   }
@@ -60,7 +66,7 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
-  server.listen({
+  httpServer.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
