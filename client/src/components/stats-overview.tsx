@@ -1,4 +1,5 @@
-import { TrendingUp, ArrowUp, ArrowDown, Star } from "lucide-react";
+import { useState, useEffect } from "react";
+import { TrendingUp, ArrowUp, ArrowDown, Star, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { DashboardStats } from "@shared/schema";
 
@@ -7,10 +8,30 @@ interface StatsOverviewProps {
 }
 
 export default function StatsOverview({ stats }: StatsOverviewProps) {
+  const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    if (stats?.nextScanIn) {
+      setCountdown(stats.nextScanIn);
+      
+      const interval = setInterval(() => {
+        setCountdown(prev => Math.max(0, prev - 1));
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [stats?.nextScanIn]);
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   if (!stats) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        {[...Array(5)].map((_, i) => (
           <Card key={i} className="bg-slate-800 border-slate-700">
             <CardContent className="p-4">
               <div className="animate-pulse">
@@ -52,7 +73,7 @@ export default function StatsOverview({ stats }: StatsOverviewProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
       {statCards.map((stat, index) => (
         <Card key={index} className="bg-slate-800 border-slate-700">
           <CardContent className="p-4">
@@ -66,6 +87,26 @@ export default function StatsOverview({ stats }: StatsOverviewProps) {
           </CardContent>
         </Card>
       ))}
+      
+      {/* Scan Clock Card */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-slate-400 text-sm">Next Scan</p>
+              <p className="text-xl font-bold text-white">
+                {countdown > 0 ? formatCountdown(countdown) : "Scanning..."}
+              </p>
+              {stats.lastScanTime && (
+                <p className="text-xs text-slate-500">
+                  Last: {new Date(stats.lastScanTime).toLocaleTimeString()}
+                </p>
+              )}
+            </div>
+            <Clock className="text-blue-400 text-xl h-6 w-6" />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

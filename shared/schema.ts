@@ -24,6 +24,10 @@ export const stocks = pgTable("stocks", {
   trend: text("trend").notNull(), // 'BULLISH' | 'BEARISH'
   signalType: text("signal_type").notNull(), // 'UPPER' | 'LOWER'
   timeframes: text("timeframes").array().notNull(),
+  trendAnalysis: text("trend_analysis"),
+  proximityZone: text("proximity_zone"), // 'NEAR_UPPER_BOS' | 'NEAR_LOWER_BOS' | 'NEUTRAL'
+  swingTarget: real("swing_target"),
+  lastScanned: timestamp("last_scanned").defaultNow(),
   isFavorite: boolean("is_favorite").notNull().default(false),
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
 });
@@ -55,4 +59,12 @@ export type DashboardStats = {
   upperSignals: number;
   lowerSignals: number;
   favorites: number;
+  lastScanTime?: Date;
+  nextScanIn?: number;
 };
+
+export type TrendAnalysis = {
+  [timeframe: string]: "BULLISH" | "BEARISH" | "NEUTRAL";
+};
+
+export type ProximityZone = "NEAR_UPPER_BOS" | "NEAR_LOWER_BOS" | "NEUTRAL";

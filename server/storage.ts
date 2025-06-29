@@ -324,6 +324,10 @@ export class MemStorage implements IStorage {
       ...insertStock, 
       id,
       isFavorite: insertStock.isFavorite ?? false,
+      trendAnalysis: insertStock.trendAnalysis ?? null,
+      proximityZone: insertStock.proximityZone ?? null,
+      swingTarget: insertStock.swingTarget ?? null,
+      lastScanned: insertStock.lastScanned ?? new Date(),
       lastUpdated: new Date()
     };
     this.stocks.set(id, stock);
@@ -366,11 +370,25 @@ export class MemStorage implements IStorage {
 
   async getDashboardStats(): Promise<DashboardStats> {
     const allStocks = Array.from(this.stocks.values());
+    
+    // Calculate scan timing (2-minute intervals)
+    const lastScanTime = allStocks.length > 0 
+      ? allStocks.reduce((latest, stock) => 
+          stock.lastScanned && stock.lastScanned > latest ? stock.lastScanned : latest, 
+          new Date(0)
+        )
+      : new Date();
+    
+    const nextScanTime = new Date(lastScanTime.getTime() + 2 * 60 * 1000); // 2 minutes from last scan
+    const nextScanIn = Math.max(0, Math.floor((nextScanTime.getTime() - Date.now()) / 1000));
+
     return {
       totalSignals: allStocks.length,
       upperSignals: allStocks.filter(s => s.signalType === "UPPER").length,
       lowerSignals: allStocks.filter(s => s.signalType === "LOWER").length,
       favorites: allStocks.filter(s => s.isFavorite).length,
+      lastScanTime,
+      nextScanIn
     };
   }
 }

@@ -66,26 +66,48 @@ export default function StockCard({ stock, onToggleFavorite }: StockCardProps) {
           </div>
         </div>
 
-        {/* Timeframe Indicators */}
-        <div className="flex items-center space-x-1 mb-3">
-          <span className="text-xs text-slate-400">Timeframes:</span>
-          {["5m", "15m", "30m", "1h", "4h"].map((timeframe) => {
-            const isActive = stock.timeframes.includes(timeframe);
-            return (
-              <span
-                key={timeframe}
-                className={`px-1 py-0.5 rounded text-xs ${
-                  isActive
-                    ? isBullish
-                      ? "bg-green-500/20 text-green-400"
-                      : "bg-red-500/20 text-red-400"
-                    : "bg-slate-600 text-slate-300"
-                }`}
-              >
-                {timeframe}
-              </span>
-            );
-          })}
+        {/* Proximity Zone Badge */}
+        <div className="mb-2">
+          <span className={`px-2 py-1 rounded text-xs font-medium ${
+            stock.proximityZone === "NEAR_UPPER_BOS" 
+              ? "bg-green-500/20 text-green-400 border border-green-500/30"
+              : stock.proximityZone === "NEAR_LOWER_BOS"
+              ? "bg-red-500/20 text-red-400 border border-red-500/30"
+              : "bg-slate-500/20 text-slate-400 border border-slate-500/30"
+          }`}>
+            {stock.proximityZone === "NEAR_UPPER_BOS" ? "Near Upper BOS" :
+             stock.proximityZone === "NEAR_LOWER_BOS" ? "Near Lower BOS" : "Neutral Zone"}
+          </span>
+        </div>
+
+        {/* Trend Analysis Matrix */}
+        <div className="mb-3">
+          <span className="text-xs text-slate-400 block mb-1">Trend Analysis:</span>
+          <div className="flex flex-wrap gap-1">
+            {stock.trendAnalysis ? (() => {
+              try {
+                const trends = JSON.parse(stock.trendAnalysis);
+                return Object.entries(trends).map(([timeframe, trend]) => (
+                  <span
+                    key={timeframe}
+                    className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                      trend === "BULLISH"
+                        ? "bg-green-500/20 text-green-400"
+                        : trend === "BEARISH"
+                        ? "bg-red-500/20 text-red-400"
+                        : "bg-slate-600 text-slate-300"
+                    }`}
+                  >
+                    {timeframe}: {trend === "BULLISH" ? "↗" : trend === "BEARISH" ? "↘" : "→"}
+                  </span>
+                ));
+              } catch {
+                return <span className="text-xs text-slate-500">No trend data</span>;
+              }
+            })() : (
+              <span className="text-xs text-slate-500">No trend data</span>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -104,8 +126,10 @@ export default function StockCard({ stock, onToggleFavorite }: StockCardProps) {
             </p>
           </div>
           <div>
-            <p className="text-slate-400">Target</p>
-            <p className="text-white font-medium">₹{stock.target.toFixed(2)}</p>
+            <p className="text-slate-400">Swing Target</p>
+            <p className="text-blue-400 font-medium">
+              ₹{stock.swingTarget ? stock.swingTarget.toFixed(2) : stock.target.toFixed(2)}
+            </p>
           </div>
           <div>
             <p className="text-slate-400">Risk</p>
@@ -117,6 +141,13 @@ export default function StockCard({ stock, onToggleFavorite }: StockCardProps) {
               ₹{stock.risk.toFixed(2)}
             </p>
           </div>
+        </div>
+
+        {/* Scan Timestamp */}
+        <div className="mt-3 pt-2 border-t border-slate-600">
+          <p className="text-xs text-slate-500">
+            Last scanned: {stock.lastScanned ? new Date(stock.lastScanned).toLocaleTimeString() : 'N/A'}
+          </p>
         </div>
       </div>
 

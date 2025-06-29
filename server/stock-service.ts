@@ -34,6 +34,9 @@ interface SMCAnalysis {
   fvgLevels: number[];
   liquidityZones: number[];
   hasValidSignal: boolean;
+  trendAnalysis: { [timeframe: string]: "BULLISH" | "BEARISH" | "NEUTRAL" };
+  proximityZone: "NEAR_UPPER_BOS" | "NEAR_LOWER_BOS" | "NEUTRAL";
+  swingTarget: number;
 }
 
 class StockDataService {
@@ -145,7 +148,10 @@ class StockDataService {
         risk: price + (trend === "BULLISH" ? -atr : atr),
         fvgLevels: [],
         liquidityZones: [],
-        hasValidSignal: false
+        hasValidSignal: false,
+        trendAnalysis: {},
+        proximityZone: "NEUTRAL",
+        swingTarget: price
       };
     }
 
@@ -158,6 +164,11 @@ class StockDataService {
     // Liquidity zones
     const liquidityZones = this.calculateLiquidityZones(price, swingRange);
     
+    // Generate enhanced analysis
+    const trendAnalysis = this.generateTrendAnalysis(price, bosLevel, trend === "BULLISH");
+    const proximityZone = this.calculateProximityZone(price, bosLevel, distance);
+    const swingTarget = this.calculateSwingTarget(price, bosLevel, trend === "BULLISH", atr);
+
     return {
       bosLevel,
       chochLevel,
@@ -168,7 +179,10 @@ class StockDataService {
       risk: price + (trend === "BULLISH" ? -atr * 2 : atr * 2),
       fvgLevels,
       liquidityZones,
-      hasValidSignal: timeframes.length >= 2
+      hasValidSignal: timeframes.length >= 2,
+      trendAnalysis,
+      proximityZone,
+      swingTarget
     };
   }
 
@@ -224,6 +238,53 @@ class StockDataService {
     ];
   }
 
+  private generateTrendAnalysis(price: number, bosLevel: number, isBullish: boolean): { [timeframe: string]: "BULLISH" | "BEARISH" | "NEUTRAL" } {
+    const timeframes = ["5m", "15m", "30m", "1h", "2h", "4h", "1D"];
+    const analysis: { [timeframe: string]: "BULLISH" | "BEARISH" | "NEUTRAL" } = {};
+    
+    timeframes.forEach((tf, index) => {
+      // Simulate different trend strengths across timeframes
+      const strength = Math.random();
+      const distance = Math.abs(price - bosLevel);
+      
+      if (distance < 2) {
+        // Strong trend alignment when close to BOS
+        analysis[tf] = isBullish ? "BULLISH" : "BEARISH";
+      } else if (distance < 4) {
+        // Mixed signals in medium range
+        analysis[tf] = strength > 0.6 ? (isBullish ? "BULLISH" : "BEARISH") : "NEUTRAL";
+      } else {
+        // Weaker signals further from BOS
+        analysis[tf] = strength > 0.7 ? (isBullish ? "BULLISH" : "BEARISH") : "NEUTRAL";
+      }
+    });
+    
+    return analysis;
+  }
+
+  private calculateProximityZone(price: number, bosLevel: number, distance: number): "NEAR_UPPER_BOS" | "NEAR_LOWER_BOS" | "NEUTRAL" {
+    if (distance > 5) return "NEUTRAL";
+    
+    if (price > bosLevel) {
+      return "NEAR_UPPER_BOS";
+    } else {
+      return "NEAR_LOWER_BOS";
+    }
+  }
+
+  private calculateSwingTarget(price: number, bosLevel: number, isBullish: boolean, atr: number): number {
+    // Calculate swing target based on structure levels
+    const swingMultiplier = 2.5; // Typical swing target is 2.5x ATR
+    
+    if (isBullish) {
+      // For bullish, target is above current structure
+      return bosLevel + (atr * swingMultiplier);
+    } else {
+      // For bearish, target is below current structure
+      return bosLevel - (atr * swingMultiplier);
+    }
+  }
+
   async getAnalyzedStocks(symbols: string[] = NSE_SYMBOLS.slice(0, 20)): Promise<InsertStock[]> {
     const quotes = await this.fetchNSEData(symbols);
     const analyzedStocks: InsertStock[] = [];
@@ -246,6 +307,10 @@ class StockDataService {
           trend: analysis.trend,
           signalType: analysis.signalType,
           timeframes: analysis.timeframes,
+          trendAnalysis: JSON.stringify(analysis.trendAnalysis),
+          proximityZone: analysis.proximityZone,
+          swingTarget: analysis.swingTarget,
+          lastScanned: new Date(),
           isFavorite: false
         });
       }
