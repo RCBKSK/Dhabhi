@@ -68,25 +68,60 @@ class StockDataService {
   async fetchNSEData(symbols: string[]): Promise<Map<string, NSEQuote>> {
     const quotes = new Map<string, NSEQuote>();
     
+    console.log(`API Key present: ${!!this.finnhubApiKey}`);
+    console.log(`API Key length: ${this.finnhubApiKey?.length || 0}`);
+    
     if (!this.finnhubApiKey) {
-      console.log('Using mock data as fallback');
+      console.log('No API key found. Using mock data as fallback');
       return this.generateMockData(symbols);
     }
 
     try {
+      // Test with a single US symbol first to verify API key works
+      console.log('Testing Finnhub API with AAPL...');
+      const testResponse = await axios.get<FinnhubQuote>('https://finnhub.io/api/v1/quote', {
+        params: {
+          symbol: 'AAPL',
+          token: this.finnhubApiKey
+        },
+        timeout: 5000
+      });
+      
+      console.log('Test response status:', testResponse.status);
+      console.log('Test response data:', testResponse.data);
+      
+      if (testResponse.status === 403) {
+        console.log('API key is invalid or expired');
+        return this.generateMockData(symbols);
+      }
+
+      // Convert NSE symbols to format that Finnhub might accept
+      // Try both .NS format and without .NS
+      const symbolsToTry = symbols.slice(0, 10).map(symbol => ({
+        original: symbol,
+        withNS: symbol,
+        withoutNS: symbol.replace('.NS', '')
+      }));
+
+      console.log('Attempting to fetch NSE data...');
+      
       // Batch fetch quotes from Finnhub
-      const promises = symbols.slice(0, 20).map(async (symbol) => {
+      const promises = symbolsToTry.map(async ({ original, withNS, withoutNS }) => {
         try {
+          // Try with .NS first
+          console.log(`Trying symbol: ${withNS}`);
           const response = await axios.get<FinnhubQuote>('https://finnhub.io/api/v1/quote', {
             params: {
-              symbol: symbol,
+              symbol: withNS,
               token: this.finnhubApiKey
             },
             timeout: 5000
           });
 
+          console.log(`Response for ${withNS}:`, response.data);
+
           if (response.data && response.data.c > 0) {
-            const cleanSymbol = symbol.replace('.NS', '');
+            const cleanSymbol = withoutNS;
             quotes.set(cleanSymbol, {
               symbol: cleanSymbol,
               companyName: this.getCompanyName(cleanSymbol),
@@ -97,11 +132,37 @@ class StockDataService {
               totalTradedValue: Math.floor(Math.random() * 50000000000) + 10000000000,
               lastUpdateTime: new Date().toISOString()
             });
+            console.log(`Successfully fetched data for ${cleanSymbol}`);
+          } else {
+            console.log(`No valid data for ${withNS}, trying without .NS...`);
+            
+            // Try without .NS
+            const response2 = await axios.get<FinnhubQuote>('https://finnhub.io/api/v1/quote', {
+              params: {
+                symbol: withoutNS,
+                token: this.finnhubApiKey
+              },
+              timeout: 5000
+            });
+
+            if (response2.data && response2.data.c > 0) {
+              quotes.set(withoutNS, {
+                symbol: withoutNS,
+                companyName: this.getCompanyName(withoutNS),
+                lastPrice: response2.data.c,
+                change: response2.data.d,
+                pChange: response2.data.dp,
+                totalTradedVolume: Math.floor(Math.random() * 10000000) + 1000000,
+                totalTradedValue: Math.floor(Math.random() * 50000000000) + 10000000000,
+                lastUpdateTime: new Date().toISOString()
+              });
+              console.log(`Successfully fetched data for ${withoutNS} (without .NS)`);
+            }
           }
         } catch (error) {
-          console.log(`Failed to fetch data for ${symbol}:`, error.message);
+          console.log(`Failed to fetch data for ${original}:`, error.response?.status, error.message);
           // Fallback to mock data for this symbol
-          const cleanSymbol = symbol.replace('.NS', '');
+          const cleanSymbol = withoutNS;
           const mockQuote = this.generateMockQuote(cleanSymbol);
           quotes.set(cleanSymbol, mockQuote);
         }
@@ -109,7 +170,9 @@ class StockDataService {
 
       await Promise.allSettled(promises);
       
-      // If we got very few quotes, supplement with mock data
+      console.log(`Successfully fetched ${quotes.size} quotes from Finnhub`);
+      
+      // If we got very few real quotes, supplement with mock data
       if (quotes.size < 5) {
         console.log('Got limited real data, supplementing with mock data');
         const mockQuotes = this.generateMockData(symbols.slice(quotes.size, 15));
@@ -121,7 +184,7 @@ class StockDataService {
       }
 
     } catch (error) {
-      console.log('Finnhub API error, falling back to mock data:', error.message);
+      console.log('Finnhub API error, falling back to mock data:', error.response?.status, error.message);
       return this.generateMockData(symbols);
     }
     
