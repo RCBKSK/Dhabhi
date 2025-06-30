@@ -103,8 +103,9 @@ export class MemStorage implements IStorage {
       console.log(`Found ${realStocks.length} stocks with valid SMC signals`);
       realStocks.forEach(stock => this.createStock(stock));
     } catch (error) {
-      console.log("Failed to fetch real NSE data, initializing with sample data");
-      this.initializeFallbackData();
+      console.error("Failed to fetch real NSE data:", error.message);
+      console.error("No fallback data will be used. Fix API configuration to get stock data.");
+      // Initialize with empty data instead of fallback
     }
   }
 
@@ -153,7 +154,8 @@ export class MemStorage implements IStorage {
       
       realStocks.forEach(stock => this.createStock(stock));
     } catch (error) {
-      console.log("Failed to refresh real data");
+      console.error("Failed to refresh real data:", error.message);
+      // Don't fallback - keep existing data or remain empty
     }
   }
 

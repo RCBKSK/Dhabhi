@@ -72,8 +72,8 @@ class StockDataService {
     console.log(`API Key length: ${this.finnhubApiKey?.length || 0}`);
     
     if (!this.finnhubApiKey) {
-      console.log('No API key found. Using mock data as fallback');
-      return this.generateMockData(symbols);
+      console.error('FINNHUB_API_KEY is required. No fallback to mock data.');
+      throw new Error('API key is required for fetching stock data');
     }
 
     try {
@@ -90,9 +90,9 @@ class StockDataService {
       console.log('Test response status:', testResponse.status);
       console.log('Test response data:', testResponse.data);
       
-      if (testResponse.status === 403) {
-        console.log('API key is invalid or expired');
-        return this.generateMockData(symbols);
+      if (testResponse.status === 403 || testResponse.status === 401) {
+        console.error('API key is invalid, expired, or unauthorized');
+        throw new Error('Invalid or expired API key');
       }
 
       // Convert NSE symbols to format that Finnhub might accept
@@ -160,11 +160,8 @@ class StockDataService {
             }
           }
         } catch (error) {
-          console.log(`Failed to fetch data for ${original}:`, error.response?.status, error.message);
-          // Fallback to mock data for this symbol
-          const cleanSymbol = withoutNS;
-          const mockQuote = this.generateMockQuote(cleanSymbol);
-          quotes.set(cleanSymbol, mockQuote);
+          console.error(`Failed to fetch data for ${original}:`, error.response?.status, error.message);
+          // Skip this symbol - no fallback to mock data
         }
       });
 
@@ -172,20 +169,11 @@ class StockDataService {
       
       console.log(`Successfully fetched ${quotes.size} quotes from Finnhub`);
       
-      // If we got very few real quotes, supplement with mock data
-      if (quotes.size < 5) {
-        console.log('Got limited real data, supplementing with mock data');
-        const mockQuotes = this.generateMockData(symbols.slice(quotes.size, 15));
-        mockQuotes.forEach((quote, symbol) => {
-          if (!quotes.has(symbol)) {
-            quotes.set(symbol, quote);
-          }
-        });
-      }
+      // No supplementation with mock data - return only real API data
 
     } catch (error) {
-      console.log('Finnhub API error, falling back to mock data:', error.response?.status, error.message);
-      return this.generateMockData(symbols);
+      console.error('Finnhub API error:', error.response?.status, error.message);
+      throw error; // Re-throw error instead of falling back to mock data
     }
     
     this.cache = quotes;
