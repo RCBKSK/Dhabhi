@@ -1,16 +1,29 @@
+
 import type { InsertStock } from "@shared/schema";
+import axios from "axios";
 
 // NSE stock symbols for monitoring (top 50 liquid stocks)
 export const NSE_SYMBOLS = [
-  "RELIANCE", "TCS", "HDFCBANK", "INFY", "HINDUNILVR", "ICICIBANK", "KOTAKBANK",
-  "BHARTIARTL", "ITC", "SBIN", "BAJFINANCE", "LICI", "LT", "HCLTECH", "AXISBANK",
-  "ASIANPAINT", "MARUTI", "SUNPHARMA", "TITAN", "ULTRACEMCO", "NESTLEIND", "WIPRO",
-  "ADANIPORTS", "NTPC", "POWERGRID", "TATAMOTORS", "JSWSTEEL", "BAJAJFINSV",
-  "TECHM", "GRASIM", "COALINDIA", "DRREDDY", "DIVISLAB", "HINDALCO", "TATASTEEL",
-  "BRITANNIA", "CIPLA", "INDUSINDBK", "EICHERMOT", "APOLLOHOSP", "HEROMOTOCO",
-  "ONGC", "BPCL", "ADANIENSOL", "TATACONSUM", "BAJAJ-AUTO", "PIDILITIND",
-  "GODREJCP", "SIEMENS", "IOC"
+  "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "HINDUNILVR.NS", "ICICIBANK.NS", "KOTAKBANK.NS",
+  "BHARTIARTL.NS", "ITC.NS", "SBIN.NS", "BAJFINANCE.NS", "LICI.NS", "LT.NS", "HCLTECH.NS", "AXISBANK.NS",
+  "ASIANPAINT.NS", "MARUTI.NS", "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS", "NESTLEIND.NS", "WIPRO.NS",
+  "ADANIPORTS.NS", "NTPC.NS", "POWERGRID.NS", "TATAMOTORS.NS", "JSWSTEEL.NS", "BAJAJFINSV.NS",
+  "TECHM.NS", "GRASIM.NS", "COALINDIA.NS", "DRREDDY.NS", "DIVISLAB.NS", "HINDALCO.NS", "TATASTEEL.NS",
+  "BRITANNIA.NS", "CIPLA.NS", "INDUSINDBK.NS", "EICHERMOT.NS", "APOLLOHOSP.NS", "HEROMOTOCO.NS",
+  "ONGC.NS", "BPCL.NS", "ADANIENSOL.NS", "TATACONSUM.NS", "BAJAJ-AUTO.NS", "PIDILITIND.NS",
+  "GODREJCP.NS", "SIEMENS.NS", "IOC.NS"
 ];
+
+interface FinnhubQuote {
+  c: number; // current price
+  d: number; // change
+  dp: number; // percent change
+  h: number; // high price of the day
+  l: number; // low price of the day
+  o: number; // open price of the day
+  pc: number; // previous close price
+  t: number; // timestamp
+}
 
 interface NSEQuote {
   symbol: string;
@@ -43,41 +56,115 @@ class StockDataService {
   private cache: Map<string, NSEQuote> = new Map();
   private lastUpdate: Date = new Date(0);
   private updateInterval = 60000; // 1 minute cache
+  private finnhubApiKey: string;
+
+  constructor() {
+    this.finnhubApiKey = process.env.FINNHUB_API_KEY || '';
+    if (!this.finnhubApiKey) {
+      console.warn('Warning: FINNHUB_API_KEY not found. Using fallback mode.');
+    }
+  }
 
   async fetchNSEData(symbols: string[]): Promise<Map<string, NSEQuote>> {
-    // In production, this would call actual NSE API or financial data provider
-    // For now, simulate realistic NSE data with proper price movements
     const quotes = new Map<string, NSEQuote>();
     
-    for (const symbol of symbols) {
-      const cached = this.cache.get(symbol);
-      const basePrice = this.getBasePrice(symbol);
-      
-      // Simulate realistic price movements
-      const volatility = this.getVolatility(symbol);
-      const priceChange = (Math.random() - 0.5) * volatility * 2;
-      const currentPrice = cached ? 
-        Math.max(cached.lastPrice + priceChange, basePrice * 0.95) : 
-        basePrice + priceChange;
-      
-      const change = cached ? currentPrice - cached.lastPrice : priceChange;
-      const pChange = (change / currentPrice) * 100;
-      
-      quotes.set(symbol, {
-        symbol,
-        companyName: this.getCompanyName(symbol),
-        lastPrice: Math.round(currentPrice * 100) / 100,
-        change: Math.round(change * 100) / 100,
-        pChange: Math.round(pChange * 100) / 100,
-        totalTradedVolume: Math.floor(Math.random() * 10000000) + 1000000,
-        totalTradedValue: Math.floor(Math.random() * 50000000000) + 10000000000,
-        lastUpdateTime: new Date().toISOString()
+    if (!this.finnhubApiKey) {
+      console.log('Using mock data as fallback');
+      return this.generateMockData(symbols);
+    }
+
+    try {
+      // Batch fetch quotes from Finnhub
+      const promises = symbols.slice(0, 20).map(async (symbol) => {
+        try {
+          const response = await axios.get<FinnhubQuote>('https://finnhub.io/api/v1/quote', {
+            params: {
+              symbol: symbol,
+              token: this.finnhubApiKey
+            },
+            timeout: 5000
+          });
+
+          if (response.data && response.data.c > 0) {
+            const cleanSymbol = symbol.replace('.NS', '');
+            quotes.set(cleanSymbol, {
+              symbol: cleanSymbol,
+              companyName: this.getCompanyName(cleanSymbol),
+              lastPrice: response.data.c,
+              change: response.data.d,
+              pChange: response.data.dp,
+              totalTradedVolume: Math.floor(Math.random() * 10000000) + 1000000,
+              totalTradedValue: Math.floor(Math.random() * 50000000000) + 10000000000,
+              lastUpdateTime: new Date().toISOString()
+            });
+          }
+        } catch (error) {
+          console.log(`Failed to fetch data for ${symbol}:`, error.message);
+          // Fallback to mock data for this symbol
+          const cleanSymbol = symbol.replace('.NS', '');
+          const mockQuote = this.generateMockQuote(cleanSymbol);
+          quotes.set(cleanSymbol, mockQuote);
+        }
       });
+
+      await Promise.allSettled(promises);
+      
+      // If we got very few quotes, supplement with mock data
+      if (quotes.size < 5) {
+        console.log('Got limited real data, supplementing with mock data');
+        const mockQuotes = this.generateMockData(symbols.slice(quotes.size, 15));
+        mockQuotes.forEach((quote, symbol) => {
+          if (!quotes.has(symbol)) {
+            quotes.set(symbol, quote);
+          }
+        });
+      }
+
+    } catch (error) {
+      console.log('Finnhub API error, falling back to mock data:', error.message);
+      return this.generateMockData(symbols);
     }
     
     this.cache = quotes;
     this.lastUpdate = new Date();
     return quotes;
+  }
+
+  private generateMockData(symbols: string[]): Map<string, NSEQuote> {
+    const quotes = new Map<string, NSEQuote>();
+    
+    for (const symbol of symbols.slice(0, 20)) {
+      const cleanSymbol = symbol.replace('.NS', '');
+      quotes.set(cleanSymbol, this.generateMockQuote(cleanSymbol));
+    }
+    
+    return quotes;
+  }
+
+  private generateMockQuote(symbol: string): NSEQuote {
+    const cached = this.cache.get(symbol);
+    const basePrice = this.getBasePrice(symbol);
+    
+    // Simulate realistic price movements
+    const volatility = this.getVolatility(symbol);
+    const priceChange = (Math.random() - 0.5) * volatility * 2;
+    const currentPrice = cached ? 
+      Math.max(cached.lastPrice + priceChange, basePrice * 0.95) : 
+      basePrice + priceChange;
+    
+    const change = cached ? currentPrice - cached.lastPrice : priceChange;
+    const pChange = (change / currentPrice) * 100;
+    
+    return {
+      symbol,
+      companyName: this.getCompanyName(symbol),
+      lastPrice: Math.round(currentPrice * 100) / 100,
+      change: Math.round(change * 100) / 100,
+      pChange: Math.round(pChange * 100) / 100,
+      totalTradedVolume: Math.floor(Math.random() * 10000000) + 1000000,
+      totalTradedValue: Math.floor(Math.random() * 50000000000) + 10000000000,
+      lastUpdateTime: new Date().toISOString()
+    };
   }
 
   private getBasePrice(symbol: string): number {
@@ -94,7 +181,6 @@ class StockDataService {
   }
 
   private getVolatility(symbol: string): number {
-    // Different stocks have different volatilities
     const highVol = ["TATAMOTORS", "JSWSTEEL", "TATASTEEL", "ADANIPORTS"];
     const lowVol = ["NESTLEIND", "HINDUNILVR", "ITC", "POWERGRID"];
     
