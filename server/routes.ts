@@ -55,9 +55,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/stocks/update-prices", async (req, res) => {
     try {
       await storage.updateStockPrices();
-      res.json({ success: true, message: "Real NSE stock data updated" });
+      res.json({ success: true, message: "Real US stock data updated" });
     } catch (error) {
-      res.status(500).json({ message: "Failed to update NSE data" });
+      res.status(500).json({ message: "Failed to update stock data" });
     }
   });
 

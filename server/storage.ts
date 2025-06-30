@@ -98,12 +98,12 @@ export class MemStorage implements IStorage {
 
   private async initializeWithRealData() {
     try {
-      console.log("Initializing with real NSE data...");
+      console.log("Initializing with real US stock data...");
       const realStocks = await stockDataService.getAnalyzedStocks();
       console.log(`Found ${realStocks.length} stocks with valid SMC signals`);
       realStocks.forEach(stock => this.createStock(stock));
     } catch (error) {
-      console.error("Failed to fetch real NSE data:", error.message);
+      console.error("Failed to fetch real US stock data:", error.message);
       console.error("No fallback data will be used. Fix API configuration to get stock data.");
       // Initialize with empty data instead of fallback
     }

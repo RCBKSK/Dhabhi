@@ -2,16 +2,13 @@
 import type { InsertStock } from "@shared/schema";
 import axios from "axios";
 
-// NSE stock symbols for monitoring (top 50 liquid stocks)
-export const NSE_SYMBOLS = [
-  "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "HINDUNILVR.NS", "ICICIBANK.NS", "KOTAKBANK.NS",
-  "BHARTIARTL.NS", "ITC.NS", "SBIN.NS", "BAJFINANCE.NS", "LICI.NS", "LT.NS", "HCLTECH.NS", "AXISBANK.NS",
-  "ASIANPAINT.NS", "MARUTI.NS", "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS", "NESTLEIND.NS", "WIPRO.NS",
-  "ADANIPORTS.NS", "NTPC.NS", "POWERGRID.NS", "TATAMOTORS.NS", "JSWSTEEL.NS", "BAJAJFINSV.NS",
-  "TECHM.NS", "GRASIM.NS", "COALINDIA.NS", "DRREDDY.NS", "DIVISLAB.NS", "HINDALCO.NS", "TATASTEEL.NS",
-  "BRITANNIA.NS", "CIPLA.NS", "INDUSINDBK.NS", "EICHERMOT.NS", "APOLLOHOSP.NS", "HEROMOTOCO.NS",
-  "ONGC.NS", "BPCL.NS", "ADANIENSOL.NS", "TATACONSUM.NS", "BAJAJ-AUTO.NS", "PIDILITIND.NS",
-  "GODREJCP.NS", "SIEMENS.NS", "IOC.NS"
+// US stock symbols for monitoring (major liquid stocks supported by Finnhub)
+export const US_SYMBOLS = [
+  "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "AVGO", "ORCL", "WMT",
+  "LLY", "JPM", "V", "UNH", "XOM", "MA", "COST", "HD", "PG", "NFLX",
+  "JNJ", "ABBV", "BAC", "CRM", "CVX", "KO", "AMD", "PEP", "TMO", "ACN",
+  "MRK", "CSCO", "LIN", "ABT", "IBM", "DHR", "VZ", "TXN", "QCOM", "WFC",
+  "CMCSA", "NEE", "RTX", "UNP", "LOW", "PM", "SPGI", "HON", "INTU", "CAT"
 ];
 
 interface FinnhubQuote {
@@ -65,7 +62,7 @@ class StockDataService {
     }
   }
 
-  async fetchNSEData(symbols: string[]): Promise<Map<string, NSEQuote>> {
+  async fetchUSData(symbols: string[]): Promise<Map<string, NSEQuote>> {
     const quotes = new Map<string, NSEQuote>();
     
     console.log(`API Key present: ${!!this.finnhubApiKey}`);
@@ -95,72 +92,37 @@ class StockDataService {
         throw new Error('Invalid or expired API key');
       }
 
-      // Convert NSE symbols to format that Finnhub might accept
-      // Try both .NS format and without .NS
-      const symbolsToTry = symbols.slice(0, 10).map(symbol => ({
-        original: symbol,
-        withNS: symbol,
-        withoutNS: symbol.replace('.NS', '')
-      }));
-
-      console.log('Attempting to fetch NSE data...');
+      console.log('Attempting to fetch US stock data...');
       
-      // Batch fetch quotes from Finnhub
-      const promises = symbolsToTry.map(async ({ original, withNS, withoutNS }) => {
+      // Batch fetch quotes from Finnhub for US stocks
+      const promises = symbols.slice(0, 20).map(async (symbol) => {
         try {
-          // Try with .NS first
-          console.log(`Trying symbol: ${withNS}`);
+          console.log(`Fetching data for: ${symbol}`);
           const response = await axios.get<FinnhubQuote>('https://finnhub.io/api/v1/quote', {
             params: {
-              symbol: withNS,
+              symbol: symbol,
               token: this.finnhubApiKey
             },
             timeout: 5000
           });
 
-          console.log(`Response for ${withNS}:`, response.data);
+          console.log(`Response for ${symbol}:`, response.data);
 
           if (response.data && response.data.c > 0) {
-            const cleanSymbol = withoutNS;
-            quotes.set(cleanSymbol, {
-              symbol: cleanSymbol,
-              companyName: this.getCompanyName(cleanSymbol),
+            quotes.set(symbol, {
+              symbol: symbol,
+              companyName: this.getCompanyName(symbol),
               lastPrice: response.data.c,
               change: response.data.d,
               pChange: response.data.dp,
-              totalTradedVolume: Math.floor(Math.random() * 10000000) + 1000000,
-              totalTradedValue: Math.floor(Math.random() * 50000000000) + 10000000000,
+              totalTradedVolume: Math.floor(Math.random() * 100000000) + 10000000,
+              totalTradedValue: Math.floor(Math.random() * 500000000000) + 100000000000,
               lastUpdateTime: new Date().toISOString()
             });
-            console.log(`Successfully fetched data for ${cleanSymbol}`);
-          } else {
-            console.log(`No valid data for ${withNS}, trying without .NS...`);
-            
-            // Try without .NS
-            const response2 = await axios.get<FinnhubQuote>('https://finnhub.io/api/v1/quote', {
-              params: {
-                symbol: withoutNS,
-                token: this.finnhubApiKey
-              },
-              timeout: 5000
-            });
-
-            if (response2.data && response2.data.c > 0) {
-              quotes.set(withoutNS, {
-                symbol: withoutNS,
-                companyName: this.getCompanyName(withoutNS),
-                lastPrice: response2.data.c,
-                change: response2.data.d,
-                pChange: response2.data.dp,
-                totalTradedVolume: Math.floor(Math.random() * 10000000) + 1000000,
-                totalTradedValue: Math.floor(Math.random() * 50000000000) + 10000000000,
-                lastUpdateTime: new Date().toISOString()
-              });
-              console.log(`Successfully fetched data for ${withoutNS} (without .NS)`);
-            }
+            console.log(`Successfully fetched data for ${symbol}`);
           }
         } catch (error) {
-          console.error(`Failed to fetch data for ${original}:`, error.response?.status, error.message);
+          console.error(`Failed to fetch data for ${symbol}:`, error.response?.status, error.message);
           // Skip this symbol - no fallback to mock data
         }
       });
@@ -220,40 +182,49 @@ class StockDataService {
 
   private getBasePrice(symbol: string): number {
     const prices: { [key: string]: number } = {
-      "RELIANCE": 2485, "TCS": 3847, "HDFCBANK": 1642, "INFY": 1789,
-      "HINDUNILVR": 2645, "ICICIBANK": 1078, "KOTAKBANK": 1734,
-      "BHARTIARTL": 1525, "ITC": 456, "SBIN": 824, "BAJFINANCE": 6847,
-      "LT": 3456, "HCLTECH": 1567, "AXISBANK": 1145, "ASIANPAINT": 2890,
-      "MARUTI": 10567, "SUNPHARMA": 1234, "TITAN": 3234, "ULTRACEMCO": 10234,
-      "NESTLEIND": 2345, "WIPRO": 567, "ADANIPORTS": 789, "NTPC": 234,
-      "POWERGRID": 287, "TATAMOTORS": 635, "JSWSTEEL": 876, "BAJAJFINSV": 1567
+      "AAPL": 201, "MSFT": 441, "GOOGL": 176, "AMZN": 185, "NVDA": 135,
+      "META": 563, "TSLA": 248, "AVGO": 173, "ORCL": 178, "WMT": 93,
+      "LLY": 706, "JPM": 248, "V": 312, "UNH": 521, "XOM": 118,
+      "MA": 524, "COST": 948, "HD": 407, "PG": 157, "NFLX": 791,
+      "JNJ": 148, "ABBV": 178, "BAC": 44, "CRM": 341, "CVX": 158,
+      "KO": 60, "AMD": 122, "PEP": 152, "TMO": 504, "ACN": 369
     };
-    return prices[symbol] || 1000;
+    return prices[symbol] || 150;
   }
 
   private getVolatility(symbol: string): number {
-    const highVol = ["TATAMOTORS", "JSWSTEEL", "TATASTEEL", "ADANIPORTS"];
-    const lowVol = ["NESTLEIND", "HINDUNILVR", "ITC", "POWERGRID"];
+    const highVol = ["TSLA", "NVDA", "AMD", "META", "NFLX"];
+    const lowVol = ["WMT", "PG", "KO", "JNJ", "UNH"];
     
-    if (highVol.includes(symbol)) return 50;
-    if (lowVol.includes(symbol)) return 10;
-    return 25; // medium volatility
+    if (highVol.includes(symbol)) return 15;
+    if (lowVol.includes(symbol)) return 5;
+    return 8; // medium volatility
   }
 
   private getCompanyName(symbol: string): string {
     const names: { [key: string]: string } = {
-      "RELIANCE": "Reliance Industries Ltd",
-      "TCS": "Tata Consultancy Services Ltd",
-      "HDFCBANK": "HDFC Bank Ltd",
-      "INFY": "Infosys Ltd",
-      "TATAMOTORS": "Tata Motors Ltd",
-      "WIPRO": "Wipro Ltd",
-      "BAJFINANCE": "Bajaj Finance Ltd",
-      "ICICIBANK": "ICICI Bank Ltd",
-      "SBIN": "State Bank of India",
-      "KOTAKBANK": "Kotak Mahindra Bank Ltd"
+      "AAPL": "Apple Inc.",
+      "MSFT": "Microsoft Corporation",
+      "GOOGL": "Alphabet Inc.",
+      "AMZN": "Amazon.com Inc.",
+      "NVDA": "NVIDIA Corporation",
+      "META": "Meta Platforms Inc.",
+      "TSLA": "Tesla Inc.",
+      "AVGO": "Broadcom Inc.",
+      "ORCL": "Oracle Corporation",
+      "WMT": "Walmart Inc.",
+      "LLY": "Eli Lilly and Company",
+      "JPM": "JPMorgan Chase & Co.",
+      "V": "Visa Inc.",
+      "UNH": "UnitedHealth Group Inc.",
+      "XOM": "Exxon Mobil Corporation",
+      "MA": "Mastercard Inc.",
+      "COST": "Costco Wholesale Corporation",
+      "HD": "The Home Depot Inc.",
+      "PG": "Procter & Gamble Company",
+      "NFLX": "Netflix Inc."
     };
-    return names[symbol] || `${symbol} Ltd`;
+    return names[symbol] || `${symbol} Inc.`;
   }
 
   performSMCAnalysis(quote: NSEQuote, historicalData?: number[]): SMCAnalysis {
@@ -422,8 +393,8 @@ class StockDataService {
     }
   }
 
-  async getAnalyzedStocks(symbols: string[] = NSE_SYMBOLS.slice(0, 20)): Promise<InsertStock[]> {
-    const quotes = await this.fetchNSEData(symbols);
+  async getAnalyzedStocks(symbols: string[] = US_SYMBOLS.slice(0, 20)): Promise<InsertStock[]> {
+    const quotes = await this.fetchUSData(symbols);
     const analyzedStocks: InsertStock[] = [];
     
     const quotesArray = Array.from(quotes.entries());
