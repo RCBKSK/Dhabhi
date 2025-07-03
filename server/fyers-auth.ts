@@ -10,10 +10,8 @@ export interface FyersTokenResponse {
   s: string;
   code: number;
   message: string;
-  data?: {
-    access_token: string;
-    refresh_token: string;
-  };
+  access_token?: string;
+  refresh_token?: string;
 }
 
 export class FyersAuth {
@@ -58,8 +56,9 @@ export class FyersAuth {
 
       console.log('Fyers auth response:', response.data);
 
-      if (response.data.s === 'ok' && response.data.data?.access_token) {
-        return response.data.data.access_token;
+      if (response.data.s === 'ok' && response.data.access_token) {
+        console.log('Successfully obtained access token');
+        return response.data.access_token;
       } else {
         throw new Error(`Token generation failed: ${response.data.message || 'Unknown error'}`);
       }
