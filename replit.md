@@ -2,7 +2,7 @@
 
 ## Overview
 
-A comprehensive stock market monitoring dashboard built with React, Express, and PostgreSQL that provides real-time NSE stock tracking with Smart Money Concept (SMC) analysis. The application features BOS/CHOCH detection, technical analysis, and advanced filtering capabilities for stock market professionals.
+A comprehensive stock market monitoring dashboard built with React, Express, and PostgreSQL that provides real-time Indian stock tracking with Smart Money Concept (SMC) analysis. The application features BOS/CHOCH detection, technical analysis, and advanced filtering capabilities for stock market professionals. Now integrated with Fyers API infrastructure for authentic Indian stock market data.
 
 ## System Architecture
 
@@ -68,6 +68,7 @@ The application supports real-time updates through automatic refresh intervals a
 
 ### External Services
 - **Neon Database**: Serverless PostgreSQL database hosting
+- **Fyers API**: Indian stock market data integration (credentials required for live data)
 - **Replit Integration**: Development environment optimizations
 
 ## Deployment Strategy
@@ -100,6 +101,9 @@ Changelog:
 - June 29, 2025. Implemented auto-removal when price moves 5-6 points from BOS level
 - June 29, 2025. Added enhanced SMC features: trend analysis matrix, proximity zones, swing targets, scan clock
 - June 29, 2025. Phase 2: Implementing live notifications, deep trend panel, stock screener, and watchlists
+- July 3, 2025. Migration from Replit Agent to Replit environment completed
+- July 3, 2025. Integrated Fyers API infrastructure for Indian stock market data (50 major NSE stocks)
+- July 3, 2025. Replaced US stock symbols with Indian stocks (RELIANCE, TCS, HDFC, etc.)
 ```
 
 ## User Preferences
