@@ -23,14 +23,14 @@ export default function TradingPanels({
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold text-white flex items-center">
               <ArrowUp className="text-green-500 mr-2 h-5 w-5" />
-              Near Upper BOS/CHOCH
+              Near Upper BOS/CHOCH - Sell
             </CardTitle>
             <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
               {upperSignals.length} stocks
             </Badge>
           </div>
         </CardHeader>
-        
+
         <CardContent className="p-4 space-y-3 max-h-96 overflow-y-auto">
           {upperSignals.length === 0 ? (
             <div className="text-center py-8 text-slate-400">
@@ -38,7 +38,7 @@ export default function TradingPanels({
               <p>No upper signals found</p>
             </div>
           ) : (
-            upperSignals.map((stock) => (
+            upperSignals.slice(0, 2).map((stock) => (
               <StockCard
                 key={stock.id}
                 stock={stock}
@@ -55,14 +55,14 @@ export default function TradingPanels({
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold text-white flex items-center">
               <ArrowDown className="text-red-500 mr-2 h-5 w-5" />
-              Near Lower BOS/CHOCH
+              Near Lower BOS/CHOCH - Buy
             </CardTitle>
             <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
               {lowerSignals.length} stocks
             </Badge>
           </div>
         </CardHeader>
-        
+
         <CardContent className="p-4 space-y-3 max-h-96 overflow-y-auto">
           {lowerSignals.length === 0 ? (
             <div className="text-center py-8 text-slate-400">
@@ -70,7 +70,7 @@ export default function TradingPanels({
               <p>No lower signals found</p>
             </div>
           ) : (
-            lowerSignals.map((stock) => (
+            lowerSignals.slice(0, 2).map((stock) => (
               <StockCard
                 key={stock.id}
                 stock={stock}

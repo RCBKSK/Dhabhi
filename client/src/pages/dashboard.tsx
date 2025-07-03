@@ -134,6 +134,9 @@ export default function Dashboard() {
               (screenerFilters.signalStrength[0] !== 1 || screenerFilters.signalStrength[1] !== 5 ? 1 : 0) +
               (screenerFilters.proximityRange[0] !== 0 || screenerFilters.proximityRange[1] !== 10 ? 1 : 0)
             }
+            upperSignals={upperSignals}
+            lowerSignals={lowerSignals}
+            onToggleFavorite={handleToggleFavorite}
           />
         </div>
 

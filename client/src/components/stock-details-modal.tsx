@@ -104,7 +104,7 @@ export default function StockDetailsModal({ stock, isOpen, onClose }: StockDetai
             <div className="bg-slate-700 p-3 rounded">
               <p className="text-slate-400 text-sm">Signal Type</p>
               <p className="font-semibold">
-                {stock.signalType === "UPPER" ? "Near Upper BOS/CHOCH" : "Near Lower BOS/CHOCH"}
+                {stock.signalType === "UPPER" ? "Near Upper BOS/CHOCH - Sell" : "Near Lower BOS/CHOCH - Buy"}
               </p>
               <p className="text-xs text-slate-400 mt-1">
                 Price is within {stock.distance.toFixed(1)} points of key level

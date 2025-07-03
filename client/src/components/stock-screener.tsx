@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Star, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,10 +17,25 @@ interface ScreenerFilters {
   proximityRange: number[];
 }
 
+interface Stock {
+  id: number;
+  symbol: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  signalType: "UPPER" | "LOWER";
+  distance: number;
+  trend: "BULLISH" | "BEARISH";
+  isFavorite: boolean;
+}
+
 interface StockScreenerProps {
   filters: ScreenerFilters;
   onFiltersChange: (filters: ScreenerFilters) => void;
   activeFiltersCount: number;
+  upperSignals: Stock[];
+  lowerSignals: Stock[];
+  onToggleFavorite: (stockId: number) => void;
 }
 
 const SECTORS = [
@@ -43,7 +58,14 @@ const MARKET_CAPS = [
   { value: "all", label: "All Market Caps" }
 ];
 
-export default function StockScreener({ filters, onFiltersChange, activeFiltersCount }: StockScreenerProps) {
+export default function StockScreener({ 
+  filters, 
+  onFiltersChange, 
+  activeFiltersCount, 
+  upperSignals, 
+  lowerSignals, 
+  onToggleFavorite 
+}: StockScreenerProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const updateFilters = (key: keyof ScreenerFilters, value: any) => {
@@ -113,6 +135,80 @@ export default function StockScreener({ filters, onFiltersChange, activeFiltersC
         
         <CollapsibleContent>
           <CardContent className="space-y-6">
+            {/* Compact Stock Preview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Near Upper BOS/CHOCH - Sell */}
+              <div className="bg-slate-700 rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-3">
+                  <TrendingDown className="h-4 w-4 text-red-400" />
+                  <h4 className="text-red-400 font-medium">Near Upper BOS/CHOCH - Sell</h4>
+                </div>
+                <div className="space-y-2">
+                  {upperSignals.slice(0, 2).map((stock) => (
+                    <div key={stock.id} className="flex items-center justify-between bg-slate-600 rounded p-2">
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onToggleFavorite(stock.id)}
+                          className={`p-1 h-auto ${
+                            stock.isFavorite
+                              ? "text-yellow-500 hover:text-yellow-400"
+                              : "text-slate-400 hover:text-yellow-500"
+                          }`}
+                        >
+                          <Star className={`h-3 w-3 ${stock.isFavorite ? "fill-current" : ""}`} />
+                        </Button>
+                        <span className="text-white text-sm font-medium">{stock.symbol}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white text-sm">₹{stock.price.toFixed(2)}</p>
+                        <p className="text-red-400 text-xs">{stock.distance.toFixed(1)}pts</p>
+                      </div>
+                    </div>
+                  ))}
+                  {upperSignals.length === 0 && (
+                    <p className="text-slate-400 text-sm text-center py-2">No signals available</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Near Lower BOS/CHOCH - Buy */}
+              <div className="bg-slate-700 rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-3">
+                  <TrendingUp className="h-4 w-4 text-green-400" />
+                  <h4 className="text-green-400 font-medium">Near Lower BOS/CHOCH - Buy</h4>
+                </div>
+                <div className="space-y-2">
+                  {lowerSignals.slice(0, 2).map((stock) => (
+                    <div key={stock.id} className="flex items-center justify-between bg-slate-600 rounded p-2">
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onToggleFavorite(stock.id)}
+                          className={`p-1 h-auto ${
+                            stock.isFavorite
+                              ? "text-yellow-500 hover:text-yellow-400"
+                              : "text-slate-400 hover:text-yellow-500"
+                          }`}
+                        >
+                          <Star className={`h-3 w-3 ${stock.isFavorite ? "fill-current" : ""}`} />
+                        </Button>
+                        <span className="text-white text-sm font-medium">{stock.symbol}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white text-sm">₹{stock.price.toFixed(2)}</p>
+                        <p className="text-green-400 text-xs">{stock.distance.toFixed(1)}pts</p>
+                      </div>
+                    </div>
+                  ))}
+                  {lowerSignals.length === 0 && (
+                    <p className="text-slate-400 text-sm text-center py-2">No signals available</p>
+                  )}
+                </div>
+              </div>
+            </div>
             {/* Sector Filters */}
             <div>
               <h4 className="text-white font-medium mb-3">Sectors</h4>
