@@ -314,6 +314,8 @@ export class MemStorage implements IStorage {
     
     const isFavorite = permanentFavorites.includes(insertStock.symbol) || insertStock.isFavorite || false;
     
+    console.log(`Creating stock ${insertStock.symbol}, isFavorite: ${isFavorite}, isPermanent: ${permanentFavorites.includes(insertStock.symbol)}`);
+    
     const stock: Stock = { 
       ...insertStock, 
       id,
@@ -367,11 +369,9 @@ export class MemStorage implements IStorage {
   }
 
   async getFavoriteStocks(userId?: number): Promise<Stock[]> {
-    if (userId) {
-      // Placeholder, implement the actual user-specific filtering
-      return Array.from(this.stocks.values()).filter(stock => stock.isFavorite);
-    }
-    return Array.from(this.stocks.values()).filter(stock => stock.isFavorite);
+    const favoriteStocks = Array.from(this.stocks.values()).filter(stock => stock.isFavorite);
+    console.log('getFavoriteStocks - Found favorites:', favoriteStocks.map(s => s.symbol));
+    return favoriteStocks;
   }
 
   async getDashboardStats(): Promise<DashboardStats> {
