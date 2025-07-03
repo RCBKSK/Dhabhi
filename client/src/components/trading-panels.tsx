@@ -1,8 +1,11 @@
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import StockCard from "@/components/stock-card";
 import type { Stock } from "@shared/schema";
+import { useState } from "react";
 
 interface TradingPanelsProps {
   upperSignals: Stock[];
@@ -15,6 +18,9 @@ export default function TradingPanels({
   lowerSignals,
   onToggleFavorite,
 }: TradingPanelsProps) {
+  const [upperExpanded, setUpperExpanded] = useState(false);
+  const [lowerExpanded, setLowerExpanded] = useState(false);
+
   return (
     <div className="mb-6">
       {/* Compact Header */}
@@ -47,7 +53,8 @@ export default function TradingPanels({
                 </div>
               </Card>
             ) : (
-              <>
+              <Collapsible open={upperExpanded} onOpenChange={setUpperExpanded}>
+                {/* Always show first 2 signals */}
                 {upperSignals.slice(0, 2).map((stock) => (
                   <StockCard
                     key={stock.id}
@@ -55,12 +62,42 @@ export default function TradingPanels({
                     onToggleFavorite={onToggleFavorite}
                   />
                 ))}
+                
+                {/* Show expand/collapse button if more than 2 signals */}
                 {upperSignals.length > 2 && (
-                  <div className="text-center py-1 text-slate-400 text-xs">
-                    +{upperSignals.length - 2} more signals
-                  </div>
+                  <>
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-slate-400 hover:text-white hover:bg-slate-700/50 py-2"
+                      >
+                        {upperExpanded ? (
+                          <>
+                            <ChevronUp className="h-4 w-4 mr-1" />
+                            Show Less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-4 w-4 mr-1" />
+                            +{upperSignals.length - 2} more signals
+                          </>
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent className="space-y-2">
+                      {upperSignals.slice(2).map((stock) => (
+                        <StockCard
+                          key={stock.id}
+                          stock={stock}
+                          onToggleFavorite={onToggleFavorite}
+                        />
+                      ))}
+                    </CollapsibleContent>
+                  </>
                 )}
-              </>
+              </Collapsible>
             )}
           </div>
         </div>
@@ -80,7 +117,8 @@ export default function TradingPanels({
                 </div>
               </Card>
             ) : (
-              <>
+              <Collapsible open={lowerExpanded} onOpenChange={setLowerExpanded}>
+                {/* Always show first 2 signals */}
                 {lowerSignals.slice(0, 2).map((stock) => (
                   <StockCard
                     key={stock.id}
@@ -88,12 +126,42 @@ export default function TradingPanels({
                     onToggleFavorite={onToggleFavorite}
                   />
                 ))}
+                
+                {/* Show expand/collapse button if more than 2 signals */}
                 {lowerSignals.length > 2 && (
-                  <div className="text-center py-1 text-slate-400 text-xs">
-                    +{lowerSignals.length - 2} more signals
-                  </div>
+                  <>
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-slate-400 hover:text-white hover:bg-slate-700/50 py-2"
+                      >
+                        {lowerExpanded ? (
+                          <>
+                            <ChevronUp className="h-4 w-4 mr-1" />
+                            Show Less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-4 w-4 mr-1" />
+                            +{lowerSignals.length - 2} more signals
+                          </>
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent className="space-y-2">
+                      {lowerSignals.slice(2).map((stock) => (
+                        <StockCard
+                          key={stock.id}
+                          stock={stock}
+                          onToggleFavorite={onToggleFavorite}
+                        />
+                      ))}
+                    </CollapsibleContent>
+                  </>
                 )}
-              </>
+              </Collapsible>
             )}
           </div>
         </div>
