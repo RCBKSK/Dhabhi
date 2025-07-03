@@ -81,13 +81,8 @@ class StockDataService {
     console.log('Fetching live Indian stock data from Fyers API...');
     
     if (!this.accessToken) {
-      console.log('No access token available. Please authenticate first.');
-      console.log('Generate auth URL and authenticate manually for now');
-      // For immediate testing, fall back to mock but log that we need authentication
-      const quotes = this.generateMockIndianData(symbols);
-      this.cache = quotes;
-      this.lastUpdate = new Date();
-      return quotes;
+      console.error('No access token available. Authentication required for live data.');
+      throw new Error('Authentication required. Please authenticate with Fyers API first.');
     }
 
     try {
@@ -95,8 +90,9 @@ class StockDataService {
       
       // Batch fetch quotes from Fyers API for Indian stocks
       const symbolsToFetch = symbols.slice(0, 20);
+      console.log('Fetching quotes for symbols:', symbolsToFetch);
+      
       const response = await this.fyersAuth.getQuotes(symbolsToFetch, this.accessToken);
-
       console.log('Fyers API response:', response);
 
       if (response && response.s === 'ok' && response.d) {
@@ -109,35 +105,24 @@ class StockDataService {
             lastPrice: data.v.lp || 0,
             change: data.v.ch || 0,
             pChange: data.v.chp || 0,
-            totalTradedVolume: data.v.volume || Math.floor(Math.random() * 10000000) + 1000000,
-            totalTradedValue: data.v.value || Math.floor(Math.random() * 5000000000) + 1000000000,
+            totalTradedVolume: data.v.volume || 0,
+            totalTradedValue: data.v.value || 0,
             lastUpdateTime: new Date().toISOString()
           });
         }
         
         console.log(`Successfully fetched ${quotes.size} live quotes from Fyers API`);
-      }
-
-      // If we got data, use it; otherwise fall back to mock
-      if (quotes.size > 0) {
         this.cache = quotes;
         this.lastUpdate = new Date();
         return quotes;
       } else {
-        console.log('No live data received, using mock data');
-        const mockQuotes = this.generateMockIndianData(symbols);
-        this.cache = mockQuotes;
-        this.lastUpdate = new Date();
-        return mockQuotes;
+        console.error('Invalid response from Fyers API:', response);
+        throw new Error('Invalid response from Fyers API');
       }
 
     } catch (error: any) {
       console.error('Fyers API error:', error.message);
-      console.log('Falling back to mock data');
-      const quotes = this.generateMockIndianData(symbols);
-      this.cache = quotes;
-      this.lastUpdate = new Date();
-      return quotes;
+      throw new Error(`Failed to fetch live data: ${error.message}`);
     }
   }
 
@@ -156,79 +141,7 @@ class StockDataService {
     return this.fyersAuth.generateAuthUrl();
   }
 
-  private generateMockIndianData(symbols: string[]): Map<string, NSEQuote> {
-    const quotes = new Map<string, NSEQuote>();
-    
-    for (const symbol of symbols.slice(0, 20)) {
-      const cleanSymbol = symbol.replace('NSE:', '').replace('-EQ', '');
-      quotes.set(cleanSymbol, this.generateMockIndianQuote(cleanSymbol));
-    }
-    
-    return quotes;
-  }
-
-  private generateMockData(symbols: string[]): Map<string, NSEQuote> {
-    const quotes = new Map<string, NSEQuote>();
-    
-    for (const symbol of symbols.slice(0, 20)) {
-      const cleanSymbol = symbol.replace('.NS', '');
-      quotes.set(cleanSymbol, this.generateMockQuote(cleanSymbol));
-    }
-    
-    return quotes;
-  }
-
-  private generateMockIndianQuote(symbol: string): NSEQuote {
-    const cached = this.cache.get(symbol);
-    const basePrice = this.getIndianBasePrice(symbol);
-    
-    // Simulate realistic price movements
-    const volatility = this.getIndianVolatility(symbol);
-    const priceChange = (Math.random() - 0.5) * volatility * 2;
-    const currentPrice = cached ? 
-      Math.max(cached.lastPrice + priceChange, basePrice * 0.95) : 
-      basePrice + priceChange;
-    
-    const change = cached ? currentPrice - cached.lastPrice : priceChange;
-    const pChange = (change / currentPrice) * 100;
-    
-    return {
-      symbol,
-      companyName: this.getIndianCompanyName(symbol),
-      lastPrice: Math.round(currentPrice * 100) / 100,
-      change: Math.round(change * 100) / 100,
-      pChange: Math.round(pChange * 100) / 100,
-      totalTradedVolume: Math.floor(Math.random() * 10000000) + 1000000,
-      totalTradedValue: Math.floor(Math.random() * 50000000000) + 10000000000,
-      lastUpdateTime: new Date().toISOString()
-    };
-  }
-
-  private generateMockQuote(symbol: string): NSEQuote {
-    const cached = this.cache.get(symbol);
-    const basePrice = this.getBasePrice(symbol);
-    
-    // Simulate realistic price movements
-    const volatility = this.getVolatility(symbol);
-    const priceChange = (Math.random() - 0.5) * volatility * 2;
-    const currentPrice = cached ? 
-      Math.max(cached.lastPrice + priceChange, basePrice * 0.95) : 
-      basePrice + priceChange;
-    
-    const change = cached ? currentPrice - cached.lastPrice : priceChange;
-    const pChange = (change / currentPrice) * 100;
-    
-    return {
-      symbol,
-      companyName: this.getCompanyName(symbol),
-      lastPrice: Math.round(currentPrice * 100) / 100,
-      change: Math.round(change * 100) / 100,
-      pChange: Math.round(pChange * 100) / 100,
-      totalTradedVolume: Math.floor(Math.random() * 10000000) + 1000000,
-      totalTradedValue: Math.floor(Math.random() * 50000000000) + 10000000000,
-      lastUpdateTime: new Date().toISOString()
-    };
-  }
+  // All mock data functions removed - system now requires live Fyers API data only
 
   private getBasePrice(symbol: string): number {
     const prices: { [key: string]: number } = {

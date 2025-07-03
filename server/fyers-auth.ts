@@ -77,21 +77,27 @@ export class FyersAuth {
   }
 
   async getQuotes(symbols: string[], accessToken: string): Promise<any> {
-    const url = 'https://api-t1.fyers.in/api/v3/quotes';
+    const url = 'https://api-t1.fyers.in/api/v3/data/quotes';
     
     try {
+      const symbolsParam = symbols.join(',');
+      console.log('Fetching quotes with URL:', url);
+      console.log('Symbols:', symbolsParam);
+      
       const response = await axios.get(url, {
         params: {
-          symbols: symbols.join(',')
+          symbols: symbolsParam
         },
         headers: {
           'Authorization': `${this.config.clientId}:${accessToken}`
         }
       });
 
+      console.log('Quotes API response:', response.data);
       return response.data;
     } catch (error: any) {
-      throw new Error(`Failed to fetch quotes: ${error.message}`);
+      console.error('Quotes API error:', error.response?.data || error.message);
+      throw new Error(`Failed to fetch quotes: ${error.response?.data?.message || error.message}`);
     }
   }
 }

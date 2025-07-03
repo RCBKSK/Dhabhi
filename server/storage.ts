@@ -98,51 +98,18 @@ export class MemStorage implements IStorage {
 
   private async initializeWithRealData() {
     try {
-      console.log("Initializing with real US stock data...");
+      console.log("Initializing with live Indian stock data from Fyers API...");
       const realStocks = await stockDataService.getAnalyzedStocks();
       console.log(`Found ${realStocks.length} stocks with valid SMC signals`);
       realStocks.forEach(stock => this.createStock(stock));
     } catch (error) {
-      console.error("Failed to fetch real US stock data:", error.message);
-      console.error("No fallback data will be used. Fix API configuration to get stock data.");
-      // Initialize with empty data instead of fallback
+      console.error("Failed to fetch live stock data:", error.message);
+      console.error("Authentication with Fyers API required. Use 'Enable Live Data' button to authenticate.");
+      // Keep empty - no fallback data
     }
   }
 
-  private initializeFallbackData() {
-    const fallbackStocks: InsertStock[] = [
-      {
-        symbol: "RELIANCE",
-        price: 2485.30,
-        change: 12.45,
-        changePercent: 0.5,
-        bosLevel: 2492.15,
-        distance: 6.85,
-        target: 2520.00,
-        risk: 2465.00,
-        trend: "BULLISH",
-        signalType: "UPPER",
-        timeframes: ["5m", "30m", "1h"],
-        isFavorite: true,
-      },
-      {
-        symbol: "TATAMOTORS",
-        price: 635.15,
-        change: -4.20,
-        changePercent: -0.7,
-        bosLevel: 630.80,
-        distance: 4.35,
-        target: 610.00,
-        risk: 650.00,
-        trend: "BEARISH",
-        signalType: "LOWER",
-        timeframes: ["5m", "30m", "1h"],
-        isFavorite: true,
-      }
-    ];
-    
-    fallbackStocks.forEach(stock => this.createStock(stock));
-  }
+  // All fallback/mock data removed - system requires live Fyers API data only
 
   private async refreshWithRealData() {
     try {

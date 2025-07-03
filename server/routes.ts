@@ -60,6 +60,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const success = await stockDataService.authenticateWithCode(authCode);
       if (success) {
+        // Force refresh stock data after successful authentication
+        await storage.updateStockPrices();
         res.json({ success: true, message: "Authentication successful. Live data is now enabled." });
       } else {
         res.status(400).json({ message: "Authentication failed" });
