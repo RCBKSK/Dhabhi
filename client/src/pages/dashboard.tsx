@@ -102,11 +102,6 @@ export default function Dashboard() {
             }
           />
         </div>
-
-        {/* Deep Trend Analysis Panel */}
-        <div className="mb-6">
-          <DeepTrendPanel />
-        </div>
         
         <TradingPanels
           upperSignals={upperSignals}
@@ -117,6 +112,11 @@ export default function Dashboard() {
           favoriteStocks={favoriteStocks}
           onToggleFavorite={handleToggleFavorite}
         />
+
+        {/* Deep Trend Analysis Panel - Moved to bottom */}
+        <div className="mb-6">
+          <DeepTrendPanel />
+        </div>
       </main>
     </div>
   );
