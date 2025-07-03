@@ -110,7 +110,17 @@ class StockDataService {
 
       if (response && response.s === 'ok' && response.d) {
         for (const data of response.d) {
-          const cleanSymbol = data.n.replace('NSE:', '').replace('BSE:', '').replace('-EQ', '').replace('-INDEX', '');
+          let cleanSymbol = data.n.replace('NSE:', '').replace('BSE:', '');
+          
+          // Handle different symbol types
+          if (cleanSymbol.includes('-INDEX')) {
+            cleanSymbol = cleanSymbol.replace('-INDEX', '');
+            // Map index symbols to display names
+            if (cleanSymbol === 'NIFTY50') cleanSymbol = 'NIFTY';
+            if (cleanSymbol === 'NIFTYBANK') cleanSymbol = 'BANKNIFTY';
+          } else {
+            cleanSymbol = cleanSymbol.replace('-EQ', '');
+          }
 
           quotes.set(cleanSymbol, {
             symbol: cleanSymbol,
@@ -180,7 +190,7 @@ class StockDataService {
   private getIndianBasePrice(symbol: string): number {
     const prices: { [key: string]: number } = {
       // Major Indices
-      "NIFTY50": 24500, "NIFTYBANK": 52000, "SENSEX": 80500,
+      "NIFTY": 24500, "BANKNIFTY": 52000, "SENSEX": 80500,
       "RELIANCE": 2850, "TCS": 4200, "HDFCBANK": 1650, "BHARTIARTL": 1550, "ICICIBANK": 1280,
       "SBIN": 820, "LICI": 950, "INFY": 1890, "ITC": 460, "HINDUNILVR": 2380,
       "MARUTI": 12500, "KOTAKBANK": 1740, "BAJFINANCE": 6800, "LT": 3650, "HCLTECH": 1450,
@@ -210,7 +220,7 @@ class StockDataService {
   private getIndianVolatility(symbol: string): number {
     const highVol = ["TATAMOTORS", "ADANIENT", "JSWSTEEL", "TATASTEEL", "HINDALCO"];
     const lowVol = ["ITC", "HINDUNILVR", "NESTLEIND", "BRITANNIA", "GODREJCP"];
-    const indexVol = ["NIFTY50", "NIFTYBANK", "SENSEX"];
+    const indexVol = ["NIFTY", "BANKNIFTY", "SENSEX"];
 
     if (highVol.includes(symbol)) return 8;
     if (lowVol.includes(symbol)) return 3;
@@ -221,8 +231,8 @@ class StockDataService {
   private getIndianCompanyName(symbol: string): string {
     const names: { [key: string]: string } = {
       // Major Indices
-      "NIFTY50": "Nifty 50 Index",
-      "NIFTYBANK": "Nifty Bank Index", 
+      "NIFTY": "Nifty 50 Index",
+      "BANKNIFTY": "Nifty Bank Index", 
       "SENSEX": "BSE Sensex Index",
       "RELIANCE": "Reliance Industries Limited",
       "TCS": "Tata Consultancy Services Limited",
