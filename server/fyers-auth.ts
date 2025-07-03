@@ -77,7 +77,7 @@ export class FyersAuth {
   }
 
   async getQuotes(symbols: string[], accessToken: string): Promise<any> {
-    const url = 'https://api-t1.fyers.in/api/v3/data/quotes';
+    const url = 'https://api-t1.fyers.in/data-rest/v2/quotes/';
     
     try {
       const symbolsParam = symbols.join(',');
@@ -98,7 +98,32 @@ export class FyersAuth {
       return response.data;
     } catch (error: any) {
       console.error('Quotes API error:', error.response?.data || error.message);
-      throw new Error(`Failed to fetch quotes: ${error.response?.data?.message || error.message}`);
+      
+      // Try fallback endpoint if the first one fails
+      try {
+        console.log('Trying fallback endpoint...');
+        const fallbackUrl = 'https://api-t1.fyers.in/data-rest/v2/history/';
+        const fallbackResponse = await axios.get(fallbackUrl, {
+          params: {
+            symbol: symbols[0], // Try with first symbol only
+            resolution: '1',
+            date_format: '1',
+            range_from: Math.floor(Date.now() / 1000) - 3600,
+            range_to: Math.floor(Date.now() / 1000),
+            cont_flag: '1'
+          },
+          headers: {
+            'Authorization': `${this.config.clientId}:${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Fallback API response:', fallbackResponse.data);
+        return fallbackResponse.data;
+      } catch (fallbackError: any) {
+        console.error('Fallback API also failed:', fallbackError.response?.data || fallbackError.message);
+        throw new Error(`Failed to fetch quotes: ${error.response?.data?.message || error.message}`);
+      }
     }
   }
 }
