@@ -1,10 +1,12 @@
-import { Search, RotateCcw, User, LogOut } from "lucide-react";
+import { Search, RotateCcw, User, LogOut, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import NotificationPanel from "./notification-panel";
+import FyersAuthModal from "./fyers-auth-modal";
+import { useState } from "react";
 
 interface HeaderProps {
   searchQuery: string;
@@ -51,6 +53,8 @@ export default function Header({
   onToggleAutoRefresh,
   onRefresh,
 }: HeaderProps) {
+  const [showFyersAuth, setShowFyersAuth] = useState(false);
+
   const handleTimeframeToggle = (timeframe: string) => {
     if (selectedTimeframes.includes(timeframe)) {
       onTimeframesChange(selectedTimeframes.filter(t => t !== timeframe));
@@ -142,6 +146,17 @@ export default function Header({
         </div>
         
         <div className="flex items-center space-x-4">
+          {/* Live Data Button */}
+          <Button
+            onClick={() => setShowFyersAuth(true)}
+            variant="outline"
+            size="sm"
+            className="bg-orange-600 hover:bg-orange-700 text-white border-orange-500"
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            Enable Live Data
+          </Button>
+          
           <span className="text-sm text-slate-400">
             Last updated: <span className="text-white">{currentTime}</span>
           </span>
@@ -155,6 +170,11 @@ export default function Header({
           </Button>
         </div>
       </div>
+      
+      <FyersAuthModal
+        isOpen={showFyersAuth}
+        onClose={() => setShowFyersAuth(false)}
+      />
     </header>
   );
 }

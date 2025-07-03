@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertStockSchema, loginSchema, type TrendQuality } from "@shared/schema";
 import { notificationService } from "./websocket";
+import { stockDataService } from "./stock-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -38,6 +39,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/logout", async (req, res) => {
     // In production, invalidate JWT token
     res.json({ success: true, message: "Logged out successfully" });
+  });
+
+  // Fyers API authentication routes
+  app.get("/api/fyers/auth-url", async (req, res) => {
+    try {
+      const authUrl = stockDataService.getAuthUrl();
+      res.json({ authUrl });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate auth URL" });
+    }
+  });
+
+  app.post("/api/fyers/authenticate", async (req, res) => {
+    try {
+      const { authCode } = req.body;
+      if (!authCode) {
+        return res.status(400).json({ message: "Auth code is required" });
+      }
+      
+      const success = await stockDataService.authenticateWithCode(authCode);
+      if (success) {
+        res.json({ success: true, message: "Authentication successful. Live data is now enabled." });
+      } else {
+        res.status(400).json({ message: "Authentication failed" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Authentication error" });
+    }
   });
 
   // Get all stocks (filtered by proximity to BOS/CHOCH)
