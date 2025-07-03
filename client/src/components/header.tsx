@@ -3,10 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import NotificationPanel from "./notification-panel";
 import FyersAuthModal from "./fyers-auth-modal";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import type { Stock } from "@shared/schema";
 
 interface HeaderProps {
   searchQuery: string;
@@ -54,12 +57,43 @@ export default function Header({
   onRefresh,
 }: HeaderProps) {
   const [showFyersAuth, setShowFyersAuth] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Search stocks when query changes
+  const { data: searchResults = [] } = useQuery<Stock[]>({
+    queryKey: ["/api/stocks/search", { q: searchQuery }],
+    enabled: searchQuery.length > 0,
+  });
+
+  // Handle clicks outside search dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Show search results when query is entered
+  useEffect(() => {
+    setShowSearchResults(searchQuery.length > 0 && searchResults.length > 0);
+  }, [searchQuery, searchResults]);
 
   const handleTimeframeToggle = (timeframe: string) => {
     if (selectedTimeframes.includes(timeframe)) {
       onTimeframesChange(selectedTimeframes.filter(t => t !== timeframe));
     } else {
       onTimeframesChange([...selectedTimeframes, timeframe]);
+    }
+  };
+
+  const handleSearchChange = (value: string) => {
+    onSearchChange(value);
+    if (value.length === 0) {
+      setShowSearchResults(false);
     }
   };
 
@@ -81,16 +115,51 @@ export default function Header({
         </div>
         
         <div className="flex items-center space-x-4">
-          {/* Search Input */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+          {/* Search Input with Dropdown */}
+          <div className="relative" ref={searchRef}>
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4 z-10" />
             <Input
               type="text"
               placeholder="Search stocks..."
               value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="bg-slate-700 border-slate-600 pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="bg-slate-700 border-slate-600 pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
             />
+            
+            {/* Search Results Dropdown */}
+            {showSearchResults && (
+              <Card className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border-slate-600 z-50 max-h-64 overflow-y-auto">
+                <CardContent className="p-2">
+                  {searchResults.map((stock) => (
+                    <div
+                      key={stock.id}
+                      className="p-3 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-600 last:border-b-0"
+                      onClick={() => {
+                        setShowSearchResults(false);
+                        onSearchChange(stock.symbol);
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-white">{stock.symbol}</span>
+                          <div className="text-sm text-slate-400">
+                            ₹{stock.price.toFixed(2)} • {stock.signalType} Signal
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`text-sm font-medium ${stock.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {stock.change >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            {stock.distance.toFixed(1)}pts
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
           
           {/* Auto Refresh Status */}

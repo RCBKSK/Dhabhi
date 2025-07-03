@@ -123,6 +123,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search stocks
+  app.get("/api/stocks/search", async (req, res) => {
+    try {
+      const query = (req.query.q as string) || "";
+      if (!query.trim()) {
+        return res.json([]);
+      }
+      
+      const allStocks = await storage.getAllStocks();
+      const filteredStocks = allStocks.filter(stock => 
+        stock.symbol.toLowerCase().includes(query.toLowerCase())
+      );
+      
+      res.json(filteredStocks.slice(0, 10)); // Limit to 10 results
+    } catch (error) {
+      res.status(500).json({ message: "Failed to search stocks" });
+    }
+  });
+
   // Get dashboard stats
   app.get("/api/stats", async (req, res) => {
     try {
