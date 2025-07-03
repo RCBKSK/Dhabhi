@@ -152,17 +152,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/stocks/search", async (req, res) => {
     try {
       const query = req.query.q as string;
-      if (!query) {
+      if (!query || query.length < 1) {
         return res.json([]);
       }
       
+      // Search through all stocks (both with and without signals)
       const allStocks = await storage.getAllStocks();
-      const filtered = allStocks.filter(stock => 
-        stock.symbol.toLowerCase().includes(query.toLowerCase())
+      const stocksNearBOS = await storage.getStocksNearBOSCHOCH(10); // Get more stocks for search
+      
+      // Combine both datasets for comprehensive search
+      const combinedStocks = new Map();
+      
+      // Add all stocks
+      allStocks.forEach(stock => {
+        combinedStocks.set(stock.symbol, stock);
+      });
+      
+      // Add/update with BOS stocks
+      stocksNearBOS.forEach(stock => {
+        combinedStocks.set(stock.symbol, stock);
+      });
+      
+      const searchQuery = query.toLowerCase();
+      const filtered = Array.from(combinedStocks.values()).filter(stock => 
+        stock.symbol.toLowerCase().includes(searchQuery) ||
+        (stock.symbol.replace(/[-_]/g, '').toLowerCase().includes(searchQuery.replace(/[-_]/g, '')))
       );
       
-      res.json(filtered);
+      // Limit results to prevent too many matches
+      res.json(filtered.slice(0, 20));
     } catch (error) {
+      console.error('Search error:', error);
       res.status(500).json({ message: "Failed to search stocks" });
     }
   });
