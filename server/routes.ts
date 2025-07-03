@@ -152,13 +152,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/stocks/search", async (req, res) => {
     try {
       const query = req.query.q as string;
+      console.log('Search request - query:', query);
+      
+      // Prevent caching of search results
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      
       if (!query || query.length < 1) {
+        console.log('Empty query, returning empty array');
         return res.json([]);
       }
       
       // Search through all stocks (both with and without signals)
       const allStocks = await storage.getAllStocks();
       const stocksNearBOS = await storage.getStocksNearBOSCHOCH(10); // Get more stocks for search
+      
+      console.log('Search data - allStocks count:', allStocks.length);
+      console.log('Search data - stocksNearBOS count:', stocksNearBOS.length);
       
       // Combine both datasets for comprehensive search
       const combinedStocks = new Map();
@@ -174,13 +185,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const searchQuery = query.toLowerCase();
+      console.log('Searching for:', searchQuery);
+      console.log('Available symbols:', Array.from(combinedStocks.keys()));
+      
       const filtered = Array.from(combinedStocks.values()).filter(stock => 
         stock.symbol.toLowerCase().includes(searchQuery) ||
         (stock.symbol.replace(/[-_]/g, '').toLowerCase().includes(searchQuery.replace(/[-_]/g, '')))
       );
       
+      console.log('Search results count:', filtered.length);
+      console.log('Search results:', filtered.map(s => s.symbol));
+      
       // Limit results to prevent too many matches
-      res.json(filtered.slice(0, 20));
+      const results = filtered.slice(0, 20);
+      res.json(results);
     } catch (error) {
       console.error('Search error:', error);
       res.status(500).json({ message: "Failed to search stocks" });
