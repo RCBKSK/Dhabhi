@@ -488,18 +488,19 @@ class StockDataService {
     for (const [symbol, quote] of quotesArray) {
       const analysis = this.performSMCAnalysis(quote);
 
-      // Check if it's an index - always include indices
+      // Check if it's an index or permanent favorite - always include these
       const isIndex = ['NIFTY', 'BANKNIFTY', 'SENSEX'].includes(quote.symbol);
+      const isPermanentFavorite = ['NIFTY', 'BANKNIFTY', 'SENSEX', 'SBIN', 'RELIANCE', 'TATAMOTORS', 'HCLTECH', 'SUNPHARMA', 'HINDALCO', 'CIPLA'].includes(quote.symbol);
       
-      // Only include stocks with valid SMC signals OR if it's an index
+      // Only include stocks with valid SMC signals OR if it's an index/permanent favorite
       if (Math.abs(quote.lastPrice - analysis.bosLevel) <= 15 && analysis.timeframes.length >= 1) {
         analysis.hasValidSignal = true;
       }
 
-      if (analysis.hasValidSignal || isIndex) {
-        // For indices, ensure they have at least basic signal data
-        if (isIndex && !analysis.hasValidSignal) {
-          analysis.timeframes = ["1h"]; // Give indices at least one timeframe
+      if (analysis.hasValidSignal || isPermanentFavorite) {
+        // For indices and permanent favorites, ensure they have at least basic signal data
+        if ((isIndex || isPermanentFavorite) && !analysis.hasValidSignal) {
+          analysis.timeframes = ["1h"]; // Give at least one timeframe
           analysis.hasValidSignal = true;
         }
 

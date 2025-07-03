@@ -305,10 +305,19 @@ export class MemStorage implements IStorage {
 
   async createStock(insertStock: InsertStock): Promise<Stock> {
     const id = this.currentStockId++;
+    
+    // List of permanently favorited stocks
+    const permanentFavorites = [
+      'NIFTY', 'BANKNIFTY', 'SENSEX', 'SBIN', 'RELIANCE', 
+      'TATAMOTORS', 'HCLTECH', 'SUNPHARMA', 'HINDALCO', 'CIPLA'
+    ];
+    
+    const isFavorite = permanentFavorites.includes(insertStock.symbol) || insertStock.isFavorite || false;
+    
     const stock: Stock = { 
       ...insertStock, 
       id,
-      isFavorite: insertStock.isFavorite ?? false,
+      isFavorite,
       trendAnalysis: insertStock.trendAnalysis ?? null,
       proximityZone: insertStock.proximityZone ?? null,
       swingTarget: insertStock.swingTarget ?? null,
