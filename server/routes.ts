@@ -237,9 +237,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
       
+      // First, force a data refresh to get latest stocks including indices
+      await storage.updateStockPrices();
+      
       // Search through all stocks (both with and without signals)
       const allStocks = await storage.getAllStocks();
-      const stocksNearBOS = await storage.getStocksNearBOSCHOCH(10); // Get more stocks for search
+      const stocksNearBOS = await storage.getStocksNearBOSCHOCH(20); // Get more stocks for search
       
       console.log('Search data - allStocks count:', allStocks.length);
       console.log('Search data - stocksNearBOS count:', stocksNearBOS.length);
@@ -259,12 +262,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const searchQuery = query.toLowerCase();
       console.log('Searching for:', searchQuery);
-      console.log('Available symbols:', Array.from(combinedStocks.keys()));
+      console.log('Available symbols:', Array.from(combinedStocks.keys()).slice(0, 10)); // Show first 10
       
-      const filtered = Array.from(combinedStocks.values()).filter(stock => 
-        stock.symbol.toLowerCase().includes(searchQuery) ||
-        (stock.symbol.replace(/[-_]/g, '').toLowerCase().includes(searchQuery.replace(/[-_]/g, '')))
-      );
+      const filtered = Array.from(combinedStocks.values()).filter(stock => {
+        const symbol = stock.symbol.toLowerCase();
+        const searchTerm = searchQuery.toLowerCase();
+        
+        // Direct match or contains match
+        return symbol.includes(searchTerm) ||
+               symbol.replace(/[-_]/g, '').includes(searchTerm.replace(/[-_]/g, '')) ||
+               // Special handling for indices
+               (symbol === 'nifty' && searchTerm.includes('nifty')) ||
+               (symbol === 'banknifty' && (searchTerm.includes('bank') || searchTerm.includes('nifty'))) ||
+               (symbol === 'sensex' && searchTerm.includes('sensex')) ||
+               // Handle partial matches for common stock name patterns
+               (symbol === 'bhartiartl' && (searchTerm.includes('bharti') || searchTerm.includes('airtel')));
+      });
       
       console.log('Search results count:', filtered.length);
       console.log('Search results:', filtered.map(s => s.symbol));

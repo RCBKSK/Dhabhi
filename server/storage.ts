@@ -277,7 +277,20 @@ export class MemStorage implements IStorage {
   }
 
   async getAllStocks(): Promise<Stock[]> {
-    return Array.from(this.stocks.values());
+    try {
+      const allStocks = Array.from(this.stocks.values());
+      console.log('getAllStocks - Total stocks in database:', allStocks.length);
+      console.log('getAllStocks - Sample symbols:', allStocks.slice(0, 10).map(s => s.symbol));
+
+      // Check if indices are included
+      const indices = allStocks.filter(s => ['NIFTY', 'BANKNIFTY', 'SENSEX'].includes(s.symbol));
+      console.log('getAllStocks - Indices found:', indices.map(s => s.symbol));
+
+      return allStocks;
+    } catch (error) {
+      console.error('Error fetching all stocks:', error);
+      return [];
+    }
   }
 
   async getStock(id: number): Promise<Stock | undefined> {
