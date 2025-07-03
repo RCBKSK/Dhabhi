@@ -1,4 +1,3 @@
-
 import type { InsertStock } from "@shared/schema";
 import axios from "axios";
 import { FyersAuth } from "./fyers-auth";
@@ -87,14 +86,14 @@ class StockDataService {
       secretKey: '6UI1UL93RN',
       redirectUri: 'https://trade.fyers.in/api-login/redirect-uri/index.html'
     });
-    
+
     console.log('Fyers API initialized with live credentials');
     // We'll need to generate an access token for API calls
   }
 
   async fetchIndianStockData(symbols: string[]): Promise<Map<string, NSEQuote>> {
     console.log('Fetching live Indian stock data from Fyers API...');
-    
+
     if (!this.accessToken) {
       console.error('No access token available. Authentication required for live data.');
       throw new Error('Authentication required. Please authenticate with Fyers API first.');
@@ -102,17 +101,17 @@ class StockDataService {
 
     try {
       const quotes = new Map<string, NSEQuote>();
-      
+
       // Batch fetch quotes from Fyers API for Indian stocks
       console.log('Fetching quotes for symbols:', symbols);
-      
+
       const response = await this.fyersAuth.getQuotes(symbols, this.accessToken);
       console.log('Fyers API response:', response);
 
       if (response && response.s === 'ok' && response.d) {
         for (const data of response.d) {
           const cleanSymbol = data.n.replace('NSE:', '').replace('BSE:', '').replace('-EQ', '').replace('-INDEX', '');
-          
+
           quotes.set(cleanSymbol, {
             symbol: cleanSymbol,
             companyName: this.getIndianCompanyName(cleanSymbol),
@@ -124,7 +123,7 @@ class StockDataService {
             lastUpdateTime: new Date().toISOString()
           });
         }
-        
+
         console.log(`Successfully fetched ${quotes.size} live quotes from Fyers API`);
         this.cache = quotes;
         this.lastUpdate = new Date();
@@ -172,7 +171,7 @@ class StockDataService {
   private getVolatility(symbol: string): number {
     const highVol = ["TSLA", "NVDA", "AMD", "META", "NFLX"];
     const lowVol = ["WMT", "PG", "KO", "JNJ", "UNH"];
-    
+
     if (highVol.includes(symbol)) return 15;
     if (lowVol.includes(symbol)) return 5;
     return 8; // medium volatility
@@ -212,7 +211,7 @@ class StockDataService {
     const highVol = ["TATAMOTORS", "ADANIENT", "JSWSTEEL", "TATASTEEL", "HINDALCO"];
     const lowVol = ["ITC", "HINDUNILVR", "NESTLEIND", "BRITANNIA", "GODREJCP"];
     const indexVol = ["NIFTY50", "NIFTYBANK", "SENSEX"];
-    
+
     if (highVol.includes(symbol)) return 8;
     if (lowVol.includes(symbol)) return 3;
     if (indexVol.includes(symbol)) return 4; // indices have moderate volatility
@@ -307,22 +306,22 @@ class StockDataService {
 
   performSMCAnalysis(quote: NSEQuote, historicalData?: number[]): SMCAnalysis {
     const price = quote.lastPrice;
-    
+
     // Simulate SMC analysis with realistic levels
     const atr = price * 0.02; // 2% ATR approximation
     const swingRange = atr * 3;
-    
+
     // Generate BOS/CHOCH levels based on price action
     const bosLevel = this.calculateBOSLevel(price, quote.change > 0);
     const chochLevel = bosLevel + (quote.change > 0 ? atr : -atr);
-    
+
     // Determine trend and signal type
     const trend: "BULLISH" | "BEARISH" = quote.change > 0 ? "BULLISH" : "BEARISH";
     const distance = Math.abs(price - bosLevel);
-    
+
     // Only show stocks within 6 points of BOS/CHOCH
     const hasValidSignal = distance <= 6;
-    
+
     if (!hasValidSignal) {
       return {
         bosLevel,
@@ -343,13 +342,13 @@ class StockDataService {
 
     // Generate timeframes where BOS/CHOCH exists (minimum 2 required)
     const timeframes = this.generateValidTimeframes(price, bosLevel);
-    
+
     // Fair Value Gap levels
     const fvgLevels = this.calculateFVGLevels(price, atr);
-    
+
     // Liquidity zones
     const liquidityZones = this.calculateLiquidityZones(price, swingRange);
-    
+
     // Generate enhanced analysis
     const trendAnalysis = this.generateTrendAnalysis(price, bosLevel, trend === "BULLISH");
     const proximityZone = this.calculateProximityZone(price, bosLevel, distance);
@@ -380,22 +379,22 @@ class StockDataService {
   private generateValidTimeframes(price: number, bosLevel: number): string[] {
     const allTimeframes = ["5m", "15m", "30m", "45m", "1h", "2h", "4h"];
     const validTimeframes: string[] = [];
-    
+
     // Simulate timeframe analysis - closer to BOS level means more timeframes
     const distance = Math.abs(price - bosLevel);
     const maxTimeframes = Math.max(2, 7 - Math.floor(distance));
-    
+
     for (let i = 0; i < Math.min(maxTimeframes, allTimeframes.length); i++) {
       if (Math.random() > 0.3) { // 70% chance for each timeframe
         validTimeframes.push(allTimeframes[i]);
       }
     }
-    
+
     // Ensure at least 2 timeframes for valid signals
     if (validTimeframes.length < 2 && distance <= 6) {
       validTimeframes.push("5m", "30m");
     }
-    
+
     return validTimeframes;
   }
 
@@ -403,14 +402,14 @@ class StockDataService {
     // Generate 2-3 Fair Value Gap levels
     const gaps: number[] = [];
     const gapSize = atr * 0.5;
-    
+
     gaps.push(price + gapSize);
     gaps.push(price - gapSize);
-    
+
     if (Math.random() > 0.5) {
       gaps.push(price + gapSize * 2);
     }
-    
+
     return gaps.map(level => Math.round(level * 100) / 100);
   }
 
@@ -427,12 +426,12 @@ class StockDataService {
   private generateTrendAnalysis(price: number, bosLevel: number, isBullish: boolean): { [timeframe: string]: "BULLISH" | "BEARISH" | "NEUTRAL" } {
     const timeframes = ["5m", "15m", "30m", "1h", "2h", "4h", "1D"];
     const analysis: { [timeframe: string]: "BULLISH" | "BEARISH" | "NEUTRAL" } = {};
-    
+
     timeframes.forEach((tf, index) => {
       // Simulate different trend strengths across timeframes
       const strength = Math.random();
       const distance = Math.abs(price - bosLevel);
-      
+
       if (distance < 2) {
         // Strong trend alignment when close to BOS
         analysis[tf] = isBullish ? "BULLISH" : "BEARISH";
@@ -444,13 +443,13 @@ class StockDataService {
         analysis[tf] = strength > 0.7 ? (isBullish ? "BULLISH" : "BEARISH") : "NEUTRAL";
       }
     });
-    
+
     return analysis;
   }
 
   private calculateProximityZone(price: number, bosLevel: number, distance: number): "NEAR_UPPER_BOS" | "NEAR_LOWER_BOS" | "NEUTRAL" {
     if (distance > 5) return "NEUTRAL";
-    
+
     if (price > bosLevel) {
       return "NEAR_UPPER_BOS";
     } else {
@@ -461,7 +460,7 @@ class StockDataService {
   private calculateSwingTarget(price: number, bosLevel: number, isBullish: boolean, atr: number): number {
     // Calculate swing target based on structure levels
     const swingMultiplier = 2.5; // Typical swing target is 2.5x ATR
-    
+
     if (isBullish) {
       // For bullish, target is above current structure
       return bosLevel + (atr * swingMultiplier);
@@ -474,12 +473,16 @@ class StockDataService {
   async getAnalyzedStocks(symbols: string[] = INDIAN_SYMBOLS.slice(0, 50)): Promise<InsertStock[]> {
     const quotes = await this.fetchIndianStockData(symbols);
     const analyzedStocks: InsertStock[] = [];
-    
+
     const quotesArray = Array.from(quotes.entries());
     for (const [symbol, quote] of quotesArray) {
       const analysis = this.performSMCAnalysis(quote);
-      
+
       // Only include stocks with valid SMC signals
+      if (Math.abs(quote.lastPrice - analysis.bosLevel) <= 15 && analysis.timeframes.length >= 1) {
+        analysis.hasValidSignal = true;
+      }
+
       if (analysis.hasValidSignal) {
         analyzedStocks.push({
           symbol: quote.symbol,
@@ -501,7 +504,7 @@ class StockDataService {
         });
       }
     }
-    
+
     return analyzedStocks;
   }
 

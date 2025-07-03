@@ -74,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all stocks (filtered by proximity to BOS/CHOCH)
   app.get("/api/stocks", async (req, res) => {
     try {
-      const proximityPoints = parseInt(req.query.proximity as string) || 5;
+      const proximityPoints = parseInt(req.query.proximity as string) || 15;
       const stocks = await storage.getStocksNearBOSCHOCH(proximityPoints);
       res.json(stocks);
     } catch (error) {
