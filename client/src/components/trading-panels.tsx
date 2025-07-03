@@ -44,7 +44,7 @@ export default function TradingPanels({
             <ArrowUp className="text-green-500 mr-2 h-4 w-4" />
             <h3 className="text-sm font-semibold text-white">Upper BOS/CHOCH - Sell</h3>
           </div>
-          <div className="space-y-2 flex-1">
+          <div className="flex-1">
             {upperSignals.length === 0 ? (
               <Card className="bg-slate-800 border-slate-700 p-4 h-24 flex items-center justify-center">
                 <div className="text-center text-slate-400">
@@ -54,14 +54,16 @@ export default function TradingPanels({
               </Card>
             ) : (
               <Collapsible open={upperExpanded} onOpenChange={setUpperExpanded}>
-                {/* Always show first 2 signals */}
-                {upperSignals.slice(0, 2).map((stock) => (
-                  <StockCard
-                    key={stock.id}
-                    stock={stock}
-                    onToggleFavorite={onToggleFavorite}
-                  />
-                ))}
+                {/* Always show first 2 signals in a 2-column grid */}
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {upperSignals.slice(0, 2).map((stock) => (
+                    <StockCard
+                      key={stock.id}
+                      stock={stock}
+                      onToggleFavorite={onToggleFavorite}
+                    />
+                  ))}
+                </div>
                 
                 {/* Show expand/collapse button if more than 2 signals */}
                 {upperSignals.length > 2 && (
@@ -70,7 +72,7 @@ export default function TradingPanels({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full text-slate-400 hover:text-white hover:bg-slate-700/50 py-2"
+                        className="w-full text-slate-400 hover:text-white hover:bg-slate-700/50 py-2 mb-2"
                       >
                         {upperExpanded ? (
                           <>
@@ -86,14 +88,16 @@ export default function TradingPanels({
                       </Button>
                     </CollapsibleTrigger>
                     
-                    <CollapsibleContent className="space-y-2">
-                      {upperSignals.slice(2).map((stock) => (
-                        <StockCard
-                          key={stock.id}
-                          stock={stock}
-                          onToggleFavorite={onToggleFavorite}
-                        />
-                      ))}
+                    <CollapsibleContent>
+                      <div className="grid grid-cols-2 gap-2">
+                        {upperSignals.slice(2).map((stock) => (
+                          <StockCard
+                            key={stock.id}
+                            stock={stock}
+                            onToggleFavorite={onToggleFavorite}
+                          />
+                        ))}
+                      </div>
                     </CollapsibleContent>
                   </>
                 )}
@@ -108,7 +112,7 @@ export default function TradingPanels({
             <ArrowDown className="text-red-500 mr-2 h-4 w-4" />
             <h3 className="text-sm font-semibold text-white">Lower BOS/CHOCH - Buy</h3>
           </div>
-          <div className="space-y-2 flex-1">
+          <div className="flex-1">
             {lowerSignals.length === 0 ? (
               <Card className="bg-slate-800 border-slate-700 p-4 h-24 flex items-center justify-center">
                 <div className="text-center text-slate-400">
@@ -118,14 +122,16 @@ export default function TradingPanels({
               </Card>
             ) : (
               <Collapsible open={lowerExpanded} onOpenChange={setLowerExpanded}>
-                {/* Always show first 2 signals */}
-                {lowerSignals.slice(0, 2).map((stock) => (
-                  <StockCard
-                    key={stock.id}
-                    stock={stock}
-                    onToggleFavorite={onToggleFavorite}
-                  />
-                ))}
+                {/* Always show first 2 signals in a 2-column grid */}
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {lowerSignals.slice(0, 2).map((stock) => (
+                    <StockCard
+                      key={stock.id}
+                      stock={stock}
+                      onToggleFavorite={onToggleFavorite}
+                    />
+                  ))}
+                </div>
                 
                 {/* Show expand/collapse button if more than 2 signals */}
                 {lowerSignals.length > 2 && (
@@ -134,7 +140,7 @@ export default function TradingPanels({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full text-slate-400 hover:text-white hover:bg-slate-700/50 py-2"
+                        className="w-full text-slate-400 hover:text-white hover:bg-slate-700/50 py-2 mb-2"
                       >
                         {lowerExpanded ? (
                           <>
@@ -150,14 +156,16 @@ export default function TradingPanels({
                       </Button>
                     </CollapsibleTrigger>
                     
-                    <CollapsibleContent className="space-y-2">
-                      {lowerSignals.slice(2).map((stock) => (
-                        <StockCard
-                          key={stock.id}
-                          stock={stock}
-                          onToggleFavorite={onToggleFavorite}
-                        />
-                      ))}
+                    <CollapsibleContent>
+                      <div className="grid grid-cols-2 gap-2">
+                        {lowerSignals.slice(2).map((stock) => (
+                          <StockCard
+                            key={stock.id}
+                            stock={stock}
+                            onToggleFavorite={onToggleFavorite}
+                          />
+                        ))}
+                      </div>
                     </CollapsibleContent>
                   </>
                 )}
