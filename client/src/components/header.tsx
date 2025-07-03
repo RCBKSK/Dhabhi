@@ -61,15 +61,19 @@ export default function Header({
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Search stocks when query changes
-  const { data: searchResults = [], isLoading: isSearching } = useQuery<Stock[]>({
+  const { data: searchResults = [], isLoading: isSearching } = useQuery({
     queryKey: ["/api/stocks/search", searchQuery],
     queryFn: async () => {
+      console.log('Frontend search query:', searchQuery);
       if (!searchQuery.trim()) return [];
       const response = await fetch(`/api/stocks/search?q=${encodeURIComponent(searchQuery)}`);
       if (!response.ok) throw new Error('Search failed');
-      return response.json();
+      const data = await response.json();
+      console.log('Frontend search results:', data);
+      return data as Stock[];
     },
     enabled: searchQuery.length > 0,
+    staleTime: 0,
   });
 
   // Handle clicks outside search dropdown
@@ -97,6 +101,7 @@ export default function Header({
   };
 
   const handleSearchChange = (value: string) => {
+    console.log('Search input changed:', value);
     onSearchChange(value);
     if (value.length === 0) {
       setShowSearchResults(false);
@@ -146,7 +151,7 @@ export default function Header({
                       <span className="text-sm">No stocks found</span>
                     </div>
                   ) : (
-                    searchResults.map((stock) => (
+                    searchResults.map((stock: Stock) => (
                       <div
                         key={stock.id}
                         className="p-3 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-600 last:border-b-0"
