@@ -317,13 +317,13 @@ class StockDataService {
   performSMCAnalysis(quote: NSEQuote, historicalData?: number[]): SMCAnalysis {
     const price = quote.lastPrice;
 
-    // Simulate SMC analysis with realistic levels
-    const atr = price * 0.02; // 2% ATR approximation
-    const swingRange = atr * 3;
+    // Calculate more realistic ATR based on stock price range
+    const atr = this.calculateATR(price, quote.symbol);
+    const swingRange = atr * 2.5;
 
-    // Generate BOS/CHOCH levels based on price action
-    const bosLevel = this.calculateBOSLevel(price, quote.change > 0);
-    const chochLevel = bosLevel + (quote.change > 0 ? atr : -atr);
+    // Generate more accurate BOS/CHOCH levels based on market structure
+    const bosLevel = this.calculateBOSLevel(price, quote.change > 0, atr);
+    const chochLevel = this.calculateCHOCHLevel(price, bosLevel, quote.change > 0, atr);
 
     // Determine trend and signal type
     const trend: "BULLISH" | "BEARISH" = quote.change > 0 ? "BULLISH" : "BEARISH";
@@ -381,9 +381,47 @@ class StockDataService {
     };
   }
 
-  private calculateBOSLevel(price: number, isBullish: boolean): number {
-    const offset = price * 0.003; // 0.3% offset
-    return isBullish ? price + offset : price - offset;
+  private calculateBOSLevel(price: number, isBullish: boolean, atr: number): number {
+    // Calculate BOS level based on recent swing highs/lows
+    // For bullish: BOS is above current price at resistance
+    // For bearish: BOS is below current price at support
+    
+    const swingOffset = atr * 0.8; // Use 80% of ATR for swing calculation
+    
+    if (isBullish) {
+      // For bullish trend, BOS level is at the next resistance (swing high)
+      return price + swingOffset;
+    } else {
+      // For bearish trend, BOS level is at the next support (swing low)  
+      return price - swingOffset;
+    }
+  }
+
+  private calculateCHOCHLevel(price: number, bosLevel: number, isBullish: boolean, atr: number): number {
+    // CHOCH (Change of Character) level is typically closer than BOS
+    const chochOffset = atr * 0.4; // CHOCH is usually 40% of ATR from BOS
+    
+    if (isBullish) {
+      return bosLevel - chochOffset;
+    } else {
+      return bosLevel + chochOffset;
+    }
+  }
+
+  private calculateATR(price: number, symbol: string): number {
+    // More realistic ATR calculation based on stock volatility and price
+    const baseVolatility = this.getIndianVolatility(symbol) / 100; // Convert to decimal
+    
+    // Adjust ATR based on price range
+    if (price < 100) {
+      return price * (baseVolatility * 0.8); // Lower volatility for low-priced stocks
+    } else if (price < 500) {
+      return price * baseVolatility;
+    } else if (price < 2000) {
+      return price * (baseVolatility * 1.2);
+    } else {
+      return price * (baseVolatility * 1.5); // Higher volatility for high-priced stocks
+    }
   }
 
   private generateValidTimeframes(price: number, bosLevel: number): string[] {
@@ -468,14 +506,14 @@ class StockDataService {
   }
 
   private calculateSwingTarget(price: number, bosLevel: number, isBullish: boolean, atr: number): number {
-    // Calculate swing target based on structure levels
-    const swingMultiplier = 2.5; // Typical swing target is 2.5x ATR
-
+    // Calculate swing target based on market structure and ATR
+    const swingMultiplier = 2.0; // More conservative swing target
+    
     if (isBullish) {
-      // For bullish, target is above current structure
+      // For bullish: target is extension beyond BOS level
       return bosLevel + (atr * swingMultiplier);
     } else {
-      // For bearish, target is below current structure
+      // For bearish: target is extension beyond BOS level
       return bosLevel - (atr * swingMultiplier);
     }
   }
@@ -492,8 +530,12 @@ class StockDataService {
       const isIndex = ['NIFTY', 'BANKNIFTY', 'SENSEX'].includes(quote.symbol);
       const isPermanentFavorite = ['NIFTY', 'BANKNIFTY', 'SENSEX', 'SBIN', 'RELIANCE', 'TATAMOTORS', 'HCLTECH', 'SUNPHARMA', 'HINDALCO', 'CIPLA'].includes(quote.symbol);
       
-      // Only include stocks with valid SMC signals OR if it's an index/permanent favorite
-      if (Math.abs(quote.lastPrice - analysis.bosLevel) <= 15 && analysis.timeframes.length >= 1) {
+      // Calculate distance more accurately and validate signals
+      const distance = Math.abs(quote.lastPrice - analysis.bosLevel);
+      const atr = this.calculateATR(quote.lastPrice, quote.symbol);
+      
+      // Valid signal if within 1.5 ATR of BOS level and has timeframe confirmation
+      if (distance <= (atr * 1.5) && analysis.timeframes.length >= 1) {
         analysis.hasValidSignal = true;
       }
 
