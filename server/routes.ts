@@ -269,14 +269,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const searchTerm = searchQuery.toLowerCase();
         
         // Direct match or contains match
-        return symbol.includes(searchTerm) ||
-               symbol.replace(/[-_]/g, '').includes(searchTerm.replace(/[-_]/g, '')) ||
-               // Special handling for indices
-               (symbol === 'nifty' && searchTerm.includes('nifty')) ||
-               (symbol === 'banknifty' && (searchTerm.includes('bank') || searchTerm.includes('nifty'))) ||
-               (symbol === 'sensex' && searchTerm.includes('sensex')) ||
-               // Handle partial matches for common stock name patterns
-               (symbol === 'bhartiartl' && (searchTerm.includes('bharti') || searchTerm.includes('airtel')));
+        if (symbol.includes(searchTerm) || symbol.replace(/[-_]/g, '').includes(searchTerm.replace(/[-_]/g, ''))) {
+          return true;
+        }
+        
+        // Special handling for indices with multiple search terms
+        if (symbol === 'nifty' && (searchTerm.includes('nifty') || searchTerm.includes('nif'))) {
+          return true;
+        }
+        if (symbol === 'banknifty' && (searchTerm.includes('bank') || searchTerm.includes('nifty') || searchTerm.includes('banknifty'))) {
+          return true;
+        }
+        if (symbol === 'sensex' && (searchTerm.includes('sensex') || searchTerm.includes('sens') || searchTerm.includes('bse'))) {
+          return true;
+        }
+        
+        // Handle partial matches for common stock name patterns
+        if (symbol === 'bhartiartl' && (searchTerm.includes('bharti') || searchTerm.includes('airtel') || searchTerm.includes('bhart'))) {
+          return true;
+        }
+        
+        return false;
       });
       
       console.log('Search results count:', filtered.length);

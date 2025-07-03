@@ -488,12 +488,21 @@ class StockDataService {
     for (const [symbol, quote] of quotesArray) {
       const analysis = this.performSMCAnalysis(quote);
 
-      // Only include stocks with valid SMC signals
+      // Check if it's an index - always include indices
+      const isIndex = ['NIFTY', 'BANKNIFTY', 'SENSEX'].includes(quote.symbol);
+      
+      // Only include stocks with valid SMC signals OR if it's an index
       if (Math.abs(quote.lastPrice - analysis.bosLevel) <= 15 && analysis.timeframes.length >= 1) {
         analysis.hasValidSignal = true;
       }
 
-      if (analysis.hasValidSignal) {
+      if (analysis.hasValidSignal || isIndex) {
+        // For indices, ensure they have at least basic signal data
+        if (isIndex && !analysis.hasValidSignal) {
+          analysis.timeframes = ["1h"]; // Give indices at least one timeframe
+          analysis.hasValidSignal = true;
+        }
+
         analyzedStocks.push({
           symbol: quote.symbol,
           price: quote.lastPrice,
@@ -514,6 +523,9 @@ class StockDataService {
         });
       }
     }
+
+    console.log(`Processed ${analyzedStocks.length} stocks including indices:`, 
+      analyzedStocks.filter(s => ['NIFTY', 'BANKNIFTY', 'SENSEX'].includes(s.symbol)).map(s => s.symbol));
 
     return analyzedStocks;
   }
