@@ -61,12 +61,51 @@ export function useStocks(searchQuery: string = "") {
 
   // Toggle favorite mutation
   const toggleFavoriteMutation = useMutation({
-    mutationFn: async (stockId: number) => {
-      const response = await apiRequest("PATCH", `/api/stocks/${stockId}/favorite`);
+    mutationFn: async ({ stockId, userId }: { stockId: number; userId?: number }) => {
+      const response = await apiRequest("PATCH", `/api/stocks/${stockId}/favorite`, {
+        body: JSON.stringify({ userId }),
+        headers: { "Content-Type": "application/json" },
+      });
       return response.json();
     },
     onSuccess: () => {
       // Invalidate all related queries
+      queryClient.invalidateQueries({ queryKey: ["/api/stocks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stocks/upper"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stocks/lower"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stocks/favorites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+    },
+  });
+
+  // Bulk add favorites mutation
+  const addBulkFavoritesMutation = useMutation({
+    mutationFn: async ({ stockIds, userId }: { stockIds: number[]; userId: number }) => {
+      const response = await apiRequest("POST", "/api/stocks/favorites/bulk", {
+        body: JSON.stringify({ stockIds, userId }),
+        headers: { "Content-Type": "application/json" },
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stocks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stocks/upper"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stocks/lower"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stocks/favorites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+    },
+  });
+
+  // Bulk remove favorites mutation
+  const removeBulkFavoritesMutation = useMutation({
+    mutationFn: async ({ stockIds, userId }: { stockIds: number[]; userId: number }) => {
+      const response = await apiRequest("DELETE", "/api/stocks/favorites/bulk", {
+        body: JSON.stringify({ stockIds, userId }),
+        headers: { "Content-Type": "application/json" },
+      });
+      return response.json();
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stocks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stocks/upper"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stocks/lower"] });
@@ -85,8 +124,16 @@ export function useStocks(searchQuery: string = "") {
     refetchStats();
   };
 
-  const toggleFavorite = async (stockId: number) => {
-    await toggleFavoriteMutation.mutateAsync(stockId);
+  const toggleFavorite = async (stockId: number, userId?: number) => {
+    await toggleFavoriteMutation.mutateAsync({ stockId, userId });
+  };
+
+  const addBulkFavorites = async (stockIds: number[], userId: number) => {
+    await addBulkFavoritesMutation.mutateAsync({ stockIds, userId });
+  };
+
+  const removeBulkFavorites = async (stockIds: number[], userId: number) => {
+    await removeBulkFavoritesMutation.mutateAsync({ stockIds, userId });
   };
 
   return {
@@ -99,6 +146,9 @@ export function useStocks(searchQuery: string = "") {
     isSearching,
     refetch,
     toggleFavorite,
+    addBulkFavorites,
+    removeBulkFavorites,
     isToggling: toggleFavoriteMutation.isPending,
+    isBulkOperating: addBulkFavoritesMutation.isPending || removeBulkFavoritesMutation.isPending,
   };
 }

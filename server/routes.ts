@@ -115,7 +115,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get favorite stocks
   app.get("/api/stocks/favorites", async (req, res) => {
     try {
-      const stocks = await storage.getFavoriteStocks();
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      const stocks = await storage.getFavoriteStocks(userId);
       res.json(stocks);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch favorite stocks" });
@@ -136,7 +137,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/stocks/:id/favorite", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const stock = await storage.toggleFavorite(id);
+      const { userId } = req.body;
+      const stock = await storage.toggleFavorite(id, userId);
       
       if (!stock) {
         return res.status(404).json({ message: "Stock not found" });
@@ -145,6 +147,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stock);
     } catch (error) {
       res.status(500).json({ message: "Failed to toggle favorite" });
+    }
+  });
+
+  // Add multiple stocks to favorites
+  app.post("/api/stocks/favorites/bulk", async (req, res) => {
+    try {
+      const { stockIds, userId } = req.body;
+      
+      if (!stockIds || !Array.isArray(stockIds) || stockIds.length === 0) {
+        return res.status(400).json({ message: "Stock IDs array is required" });
+      }
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+      
+      const success = await storage.addBulkFavorites(stockIds, userId);
+      
+      if (success) {
+        res.json({ success: true, message: `Added ${stockIds.length} stocks to favorites` });
+      } else {
+        res.status(500).json({ message: "Failed to add stocks to favorites" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to add bulk favorites" });
+    }
+  });
+
+  // Remove multiple stocks from favorites
+  app.delete("/api/stocks/favorites/bulk", async (req, res) => {
+    try {
+      const { stockIds, userId } = req.body;
+      
+      if (!stockIds || !Array.isArray(stockIds) || stockIds.length === 0) {
+        return res.status(400).json({ message: "Stock IDs array is required" });
+      }
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+      
+      const success = await storage.removeBulkFavorites(stockIds, userId);
+      
+      if (success) {
+        res.json({ success: true, message: `Removed ${stockIds.length} stocks from favorites` });
+      } else {
+        res.status(500).json({ message: "Failed to remove stocks from favorites" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to remove bulk favorites" });
     }
   });
 

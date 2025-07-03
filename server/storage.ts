@@ -1,23 +1,26 @@
-import { stocks, users, type Stock, type InsertStock, type DashboardStats, type User, type InsertUser } from "@shared/schema";
+import { stocks, users, userFavorites, type Stock, type InsertStock, type DashboardStats, type User, type InsertUser } from "@shared/schema";
 import { stockDataService } from "./stock-service";
+import { eq, desc, asc, and, or, sql, count, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Stock methods
   getAllStocks(): Promise<Stock[]>;
   getStock(id: number): Promise<Stock | undefined>;
   getStockBySymbol(symbol: string): Promise<Stock | undefined>;
   createStock(stock: InsertStock): Promise<Stock>;
   updateStock(id: number, updates: Partial<InsertStock>): Promise<Stock | undefined>;
-  toggleFavorite(id: number): Promise<Stock | undefined>;
+  toggleFavorite(id: number, userId?: number): Promise<Stock | undefined>;
   getUpperSignals(): Promise<Stock[]>;
   getLowerSignals(): Promise<Stock[]>;
-  getFavoriteStocks(): Promise<Stock[]>;
+  getFavoriteStocks(userId?: number): Promise<Stock[]>;
   getDashboardStats(): Promise<DashboardStats>;
-  
+  addBulkFavorites(stockIds: number[], userId: number): Promise<boolean>;
+  removeBulkFavorites(stockIds: number[], userId: number): Promise<boolean>;
+
   // Real-time filtering methods
   getStocksNearBOSCHOCH(proximityPoints: number): Promise<Stock[]>;
   updateStockPrices(): Promise<void>;
@@ -49,7 +52,7 @@ export class MemStorage implements IStorage {
       role: "admin",
       createdAt: new Date()
     };
-    
+
     const secondaryUser: User = {
       id: this.currentUserId++,
       username: "kantidabhi",
@@ -57,7 +60,7 @@ export class MemStorage implements IStorage {
       role: "user",
       createdAt: new Date()
     };
-    
+
     this.users.set(adminUser.id, adminUser);
     this.users.set(secondaryUser.id, secondaryUser);
   }
@@ -84,7 +87,7 @@ export class MemStorage implements IStorage {
     return Array.from(this.stocks.values()).filter(stock => {
       // Only show stocks with BOS/CHOCH in 2+ timeframes
       if (stock.timeframes.length < 2) return false;
-      
+
       // Check if price is within proximity to BOS level
       return Math.abs(stock.price - stock.bosLevel) <= proximityPoints;
     });
@@ -114,11 +117,11 @@ export class MemStorage implements IStorage {
   private async refreshWithRealData() {
     try {
       const realStocks = await stockDataService.getAnalyzedStocks();
-      
+
       // Clear existing stocks and reload with fresh data
       this.stocks.clear();
       this.currentStockId = 1;
-      
+
       realStocks.forEach(stock => this.createStock(stock));
     } catch (error) {
       console.error("Failed to refresh real data:", error.message);
@@ -306,19 +309,27 @@ export class MemStorage implements IStorage {
   async updateStock(id: number, updates: Partial<InsertStock>): Promise<Stock | undefined> {
     const existing = this.stocks.get(id);
     if (!existing) return undefined;
-    
+
     const updated = { ...existing, ...updates };
     this.stocks.set(id, updated);
     return updated;
   }
 
-  async toggleFavorite(id: number): Promise<Stock | undefined> {
-    const existing = this.stocks.get(id);
+  async toggleFavorite(stockId: number, userId?: number): Promise<Stock | undefined> {
+    const existing = this.stocks.get(stockId);
     if (!existing) return undefined;
-    
-    const updated = { ...existing, isFavorite: !existing.isFavorite };
-    this.stocks.set(id, updated);
-    return updated;
+
+    if (userId) {
+      // Check if the stock is already a favorite for the user
+      const isFavorite = false; // Placeholder, implement the actual check
+      const updated = { ...existing, isFavorite: !isFavorite };
+      this.stocks.set(stockId, updated);
+      return updated;
+    } else {
+      const updated = { ...existing, isFavorite: !existing.isFavorite };
+      this.stocks.set(stockId, updated);
+      return updated;
+    }
   }
 
   async getUpperSignals(): Promise<Stock[]> {
@@ -333,13 +344,17 @@ export class MemStorage implements IStorage {
       .sort((a, b) => a.isFavorite === b.isFavorite ? 0 : a.isFavorite ? -1 : 1);
   }
 
-  async getFavoriteStocks(): Promise<Stock[]> {
+  async getFavoriteStocks(userId?: number): Promise<Stock[]> {
+    if (userId) {
+      // Placeholder, implement the actual user-specific filtering
+      return Array.from(this.stocks.values()).filter(stock => stock.isFavorite);
+    }
     return Array.from(this.stocks.values()).filter(stock => stock.isFavorite);
   }
 
   async getDashboardStats(): Promise<DashboardStats> {
     const allStocks = Array.from(this.stocks.values());
-    
+
     // Calculate scan timing (2-minute intervals)
     const lastScanTime = allStocks.length > 0 
       ? allStocks.reduce((latest, stock) => 
@@ -347,7 +362,7 @@ export class MemStorage implements IStorage {
           new Date(0)
         )
       : new Date();
-    
+
     const nextScanTime = new Date(lastScanTime.getTime() + 2 * 60 * 1000); // 2 minutes from last scan
     const nextScanIn = Math.max(0, Math.floor((nextScanTime.getTime() - Date.now()) / 1000));
 
@@ -359,6 +374,16 @@ export class MemStorage implements IStorage {
       lastScanTime,
       nextScanIn
     };
+  }
+
+  async addBulkFavorites(stockIds: number[], userId: number): Promise<boolean> {
+    // Placeholder, implement the actual bulk add logic
+    return true;
+  }
+
+  async removeBulkFavorites(stockIds: number[], userId: number): Promise<boolean> {
+    // Placeholder, implement the actual bulk remove logic
+    return true;
   }
 }
 

@@ -1,11 +1,17 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
+import { useStocks } from "@/hooks/use-stocks";
+import { useWebSocket } from "@/hooks/use-websocket";
 import Header from "@/components/header";
 import StatsOverview from "@/components/stats-overview";
 import TradingPanels from "@/components/trading-panels";
 import FavoritesSection from "@/components/favorites-section";
+import NotificationPanel from "@/components/notification-panel";
 import DeepTrendPanel from "@/components/deep-trend-panel";
-import StockScreener from "@/components/stock-screener";
-import { useStocks } from "@/hooks/use-stocks";
+import FyersAuthModal from "@/components/fyers-auth-modal";
+import BulkFavoritesSelector from "@/components/bulk-favorites-selector";
+import { Loader2 } from "lucide-react";
 
 export default function Dashboard() {
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -21,6 +27,8 @@ export default function Dashboard() {
     proximityRange: [0, 10]
   });
 
+  const { user } = useAuth();
+
   const {
     allStocks,
     upperSignals,
@@ -30,6 +38,9 @@ export default function Dashboard() {
     isLoading,
     refetch,
     toggleFavorite,
+    addBulkFavorites,
+    removeBulkFavorites,
+    isBulkOperating,
   } = useStocks(searchQuery);
 
   // Auto-refresh functionality with real NSE data updates
@@ -56,7 +67,29 @@ export default function Dashboard() {
   };
 
   const handleToggleFavorite = async (stockId: number) => {
-    await toggleFavorite(stockId);
+    try {
+      await toggleFavorite(stockId, user?.id);
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+    }
+  };
+
+  const handleAddBulkFavorites = async (stockIds: number[]) => {
+    if (!user?.id) return;
+    try {
+      await addBulkFavorites(stockIds, user.id);
+    } catch (error) {
+      console.error("Failed to add bulk favorites:", error);
+    }
+  };
+
+  const handleRemoveBulkFavorites = async (stockIds: number[]) => {
+    if (!user?.id) return;
+    try {
+      await removeBulkFavorites(stockIds, user.id);
+    } catch (error) {
+      console.error("Failed to remove bulk favorites:", error);
+    }
   };
 
   if (isLoading) {
@@ -83,10 +116,10 @@ export default function Dashboard() {
         onToggleAutoRefresh={setAutoRefresh}
         onRefresh={handleRefresh}
       />
-      
+
       <main className="p-6">
         <StatsOverview stats={dashboardStats} />
-        
+
         {/* Stock Screener */}
         <div className="mb-6">
           <StockScreener
@@ -102,12 +135,21 @@ export default function Dashboard() {
             }
           />
         </div>
-        
+
+        {/* Bulk Favorites Selector */}
+        <BulkFavoritesSelector
+          stocks={[...upperSignals, ...lowerSignals]}
+          onAddBulkFavorites={handleAddBulkFavorites}
+          onRemoveBulkFavorites={handleRemoveBulkFavorites}
+          isLoading={isBulkOperating}
+        />
+
         <TradingPanels
           upperSignals={upperSignals}
           lowerSignals={lowerSignals}
           onToggleFavorite={handleToggleFavorite}
         />
+
         <FavoritesSection
           favoriteStocks={favoriteStocks}
           onToggleFavorite={handleToggleFavorite}

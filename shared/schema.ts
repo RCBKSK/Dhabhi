@@ -32,6 +32,14 @@ export const stocks = pgTable("stocks", {
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
 });
 
+// Junction table for user favorites
+export const userFavorites = pgTable("user_favorites", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  stockId: integer("stock_id").notNull().references(() => stocks.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -51,6 +59,11 @@ export type Stock = typeof stocks.$inferSelect;
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
+});
+
+export const bulkFavoritesSchema = z.object({
+  stockIds: z.array(z.number()).min(1, "At least one stock must be selected"),
+  userId: z.number(),
 });
 
 // Dashboard stats type
