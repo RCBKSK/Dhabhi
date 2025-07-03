@@ -5,6 +5,7 @@ import { FyersAuth } from "./fyers-auth";
 
 // Indian stock symbols for monitoring (major liquid stocks from NSE)
 export const INDIAN_SYMBOLS = [
+  // Top 50 NSE stocks by market cap and liquidity
   "NSE:RELIANCE-EQ", "NSE:TCS-EQ", "NSE:HDFCBANK-EQ", "NSE:BHARTIARTL-EQ", "NSE:ICICIBANK-EQ",
   "NSE:SBIN-EQ", "NSE:LICI-EQ", "NSE:INFY-EQ", "NSE:ITC-EQ", "NSE:HINDUNILVR-EQ",
   "NSE:MARUTI-EQ", "NSE:KOTAKBANK-EQ", "NSE:BAJFINANCE-EQ", "NSE:LT-EQ", "NSE:HCLTECH-EQ",
@@ -14,7 +15,19 @@ export const INDIAN_SYMBOLS = [
   "NSE:ADANIPORTS-EQ", "NSE:DIVISLAB-EQ", "NSE:JSWSTEEL-EQ", "NSE:DRREDDY-EQ", "NSE:GRASIM-EQ",
   "NSE:TATASTEEL-EQ", "NSE:HINDALCO-EQ", "NSE:BRITANNIA-EQ", "NSE:CIPLA-EQ", "NSE:HEROMOTOCO-EQ",
   "NSE:BAJAJ-AUTO-EQ", "NSE:APOLLOHOSP-EQ", "NSE:INDUSINDBK-EQ", "NSE:EICHERMOT-EQ", "NSE:TATACONSUM-EQ",
-  "NSE:BPCL-EQ", "NSE:GODREJCP-EQ", "NSE:SHRIRAMFIN-EQ", "NSE:SIEMENS-EQ", "NSE:PIDILITIND-EQ"
+  "NSE:BPCL-EQ", "NSE:GODREJCP-EQ", "NSE:SHRIRAMFIN-EQ", "NSE:SIEMENS-EQ", "NSE:PIDILITIND-EQ",
+  // Additional popular stocks
+  "NSE:VEDL-EQ", "NSE:IOC-EQ", "NSE:SAIL-EQ", "NSE:NMDC-EQ", "NSE:GAIL-EQ",
+  "NSE:M&M-EQ", "NSE:HDFC-EQ", "NSE:BANKBARODA-EQ", "NSE:CANBK-EQ", "NSE:UNIONBANK-EQ",
+  "NSE:TVSMOTOR-EQ", "NSE:DABUR-EQ", "NSE:COLPAL-EQ", "NSE:MARICO-EQ", "NSE:MCDOWELL-N-EQ",
+  "NSE:AMBUJACEM-EQ", "NSE:ACC-EQ", "NSE:SHREECEM-EQ", "NSE:RAMCOCEM-EQ", "NSE:JBCHEPHARM-EQ",
+  "NSE:LUPIN-EQ", "NSE:TORNTPHARM-EQ", "NSE:BIOCON-EQ", "NSE:CADILAHC-EQ", "NSE:AUROPHARMA-EQ",
+  "NSE:MOTHERSON-EQ", "NSE:BOSCHLTD-EQ", "NSE:BALKRISIND-EQ", "NSE:ASHOKLEY-EQ", "NSE:EXIDEIND-EQ",
+  "NSE:PAGEIND-EQ", "NSE:PIDILITIND-EQ", "NSE:BERGEPAINT-EQ", "NSE:AKZONOBEL-EQ", "NSE:RELAXO-EQ",
+  "NSE:BATAINDIA-EQ", "NSE:VIPIND-EQ", "NSE:CENTRALBK-EQ", "NSE:PNB-EQ", "NSE:IDFCFIRSTB-EQ",
+  "NSE:FEDERALBNK-EQ", "NSE:RBLBANK-EQ", "NSE:YESBANK-EQ", "NSE:IDEA-EQ", "NSE:JINDALSTEL-EQ",
+  "NSE:DLF-EQ", "NSE:GODREJPROP-EQ", "NSE:OBEROIRLTY-EQ", "NSE:PRESTIGE-EQ", "NSE:BRIGADE-EQ",
+  "NSE:IRCTC-EQ", "NSE:CONCOR-EQ", "NSE:APOLLOTYRE-EQ", "NSE:ESCORTS-EQ", "NSE:FORCEMOT-EQ"
 ];
 
 interface FyersQuote {
@@ -89,10 +102,9 @@ class StockDataService {
       const quotes = new Map<string, NSEQuote>();
       
       // Batch fetch quotes from Fyers API for Indian stocks
-      const symbolsToFetch = symbols.slice(0, 20);
-      console.log('Fetching quotes for symbols:', symbolsToFetch);
+      console.log('Fetching quotes for symbols:', symbols);
       
-      const response = await this.fyersAuth.getQuotes(symbolsToFetch, this.accessToken);
+      const response = await this.fyersAuth.getQuotes(symbols, this.accessToken);
       console.log('Fyers API response:', response);
 
       if (response && response.s === 'ok' && response.d) {
@@ -175,7 +187,19 @@ class StockDataService {
       "ADANIPORTS": 1280, "DIVISLAB": 5850, "JSWSTEEL": 948, "DRREDDY": 1290, "GRASIM": 2680,
       "TATASTEEL": 148, "HINDALCO": 648, "BRITANNIA": 4980, "CIPLA": 1548, "HEROMOTOCO": 4850,
       "BAJAJ-AUTO": 9200, "APOLLOHOSP": 6890, "INDUSINDBK": 978, "EICHERMOT": 4920, "TATACONSUM": 920,
-      "BPCL": 298, "GODREJCP": 1148, "SHRIRAMFIN": 2980, "SIEMENS": 6840, "PIDILITIND": 3150
+      "BPCL": 298, "GODREJCP": 1148, "SHRIRAMFIN": 2980, "SIEMENS": 6840, "PIDILITIND": 3150,
+      // Additional stocks
+      "VEDL": 450, "IOC": 140, "SAIL": 118, "NMDC": 180, "GAIL": 198,
+      "M&M": 2850, "HDFC": 2750, "BANKBARODA": 245, "CANBK": 105, "UNIONBANK": 125,
+      "TVSMOTOR": 2380, "DABUR": 640, "COLPAL": 2890, "MARICO": 630, "MCDOWELL-N": 1050,
+      "AMBUJACEM": 580, "ACC": 2450, "SHREECEM": 28500, "RAMCOCEM": 950, "JBCHEPHARM": 690,
+      "LUPIN": 2180, "TORNTPHARM": 3450, "BIOCON": 372, "CADILAHC": 580, "AUROPHARMA": 1280,
+      "MOTHERSON": 163, "BOSCHLTD": 34500, "BALKRISIND": 2780, "ASHOKLEY": 220, "EXIDEIND": 420,
+      "PAGEIND": 44500, "BERGEPAINT": 720, "AKZONOBEL": 3200, "RELAXO": 1580, "BATAINDIA": 1680,
+      "VIPIND": 890, "CENTRALBK": 55, "PNB": 102, "IDFCFIRSTB": 78, "FEDERALBNK": 172,
+      "RBLBANK": 258, "YESBANK": 19, "IDEA": 8, "JINDALSTEL": 870, "DLF": 820,
+      "GODREJPROP": 2750, "OBEROIRLTY": 1980, "PRESTIGE": 1750, "BRIGADE": 1250, "IRCTC": 780,
+      "CONCOR": 890, "APOLLOTYRE": 520, "ESCORTS": 3450, "FORCEMOT": 8900
     };
     return prices[symbol] || 1500;
   }
@@ -437,7 +461,7 @@ class StockDataService {
     }
   }
 
-  async getAnalyzedStocks(symbols: string[] = INDIAN_SYMBOLS.slice(0, 20)): Promise<InsertStock[]> {
+  async getAnalyzedStocks(symbols: string[] = INDIAN_SYMBOLS.slice(0, 50)): Promise<InsertStock[]> {
     const quotes = await this.fetchIndianStockData(symbols);
     const analyzedStocks: InsertStock[] = [];
     

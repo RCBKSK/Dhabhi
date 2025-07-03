@@ -64,13 +64,10 @@ export default function Header({
   const { data: searchResults = [], isLoading: isSearching } = useQuery({
     queryKey: ["/api/stocks/search", searchQuery],
     queryFn: async () => {
-      console.log('Frontend search query:', searchQuery);
       if (!searchQuery.trim()) return [];
       const response = await fetch(`/api/stocks/search?q=${encodeURIComponent(searchQuery)}`);
       if (!response.ok) throw new Error('Search failed');
-      const data = await response.json();
-      console.log('Frontend search results:', data);
-      return data as Stock[];
+      return response.json() as Promise<Stock[]>;
     },
     enabled: searchQuery.length > 0,
     staleTime: 0,
@@ -101,7 +98,6 @@ export default function Header({
   };
 
   const handleSearchChange = (value: string) => {
-    console.log('Search input changed:', value);
     onSearchChange(value);
     if (value.length === 0) {
       setShowSearchResults(false);
