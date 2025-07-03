@@ -77,53 +77,70 @@ export class FyersAuth {
   }
 
   async getQuotes(symbols: string[], accessToken: string): Promise<any> {
-    const url = 'https://api-t1.fyers.in/data-rest/v2/quotes/';
+    // Try multiple endpoint variations based on Fyers API documentation
+    const endpoints = [
+      'https://api-t1.fyers.in/data-rest/v2/quotes',
+      'https://api-t1.fyers.in/api/v3/data/quotes',
+      'https://api-t1.fyers.in/data/quotes'
+    ];
     
-    try {
-      const symbolsParam = symbols.join(',');
-      console.log('Fetching quotes with URL:', url);
-      console.log('Symbols:', symbolsParam);
-      
-      const response = await axios.get(url, {
-        params: {
-          symbols: symbolsParam
-        },
-        headers: {
-          'Authorization': `${this.config.clientId}:${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('Quotes API response:', response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error('Quotes API error:', error.response?.data || error.message);
-      
-      // Try fallback endpoint if the first one fails
+    for (const url of endpoints) {
       try {
-        console.log('Trying fallback endpoint...');
-        const fallbackUrl = 'https://api-t1.fyers.in/data-rest/v2/history/';
-        const fallbackResponse = await axios.get(fallbackUrl, {
+        const symbolsParam = symbols.join(',');
+        console.log(`Trying endpoint: ${url}`);
+        console.log('Symbols:', symbolsParam);
+        
+        const response = await axios.get(url, {
           params: {
-            symbol: symbols[0], // Try with first symbol only
-            resolution: '1',
-            date_format: '1',
-            range_from: Math.floor(Date.now() / 1000) - 3600,
-            range_to: Math.floor(Date.now() / 1000),
-            cont_flag: '1'
+            symbols: symbolsParam
           },
           headers: {
             'Authorization': `${this.config.clientId}:${accessToken}`,
             'Content-Type': 'application/json'
           }
         });
-        
-        console.log('Fallback API response:', fallbackResponse.data);
-        return fallbackResponse.data;
-      } catch (fallbackError: any) {
-        console.error('Fallback API also failed:', fallbackError.response?.data || fallbackError.message);
-        throw new Error(`Failed to fetch quotes: ${error.response?.data?.message || error.message}`);
+
+        console.log('Quotes API response:', response.data);
+        return response.data;
+      } catch (error: any) {
+        console.error(`Endpoint ${url} failed:`, error.response?.status || error.message);
+        continue; // Try next endpoint
       }
     }
+    
+    // If all quote endpoints fail, try individual symbol requests
+    try {
+      console.log('Trying individual symbol requests...');
+      const results = [];
+      
+      for (const symbol of symbols.slice(0, 5)) { // Limit to 5 symbols to avoid rate limits
+        try {
+          const response = await axios.get('https://api-t1.fyers.in/data-rest/v2/quotes', {
+            params: {
+              symbols: symbol
+            },
+            headers: {
+              'Authorization': `${this.config.clientId}:${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.data) {
+            results.push(response.data);
+          }
+        } catch (symbolError) {
+          console.error(`Failed to fetch ${symbol}:`, symbolError.response?.status);
+        }
+      }
+      
+      if (results.length > 0) {
+        console.log(`Successfully fetched ${results.length} individual quotes`);
+        return { s: 'ok', d: results };
+      }
+    } catch (individualError: any) {
+      console.error('Individual requests also failed:', individualError.message);
+    }
+    
+    throw new Error('All Fyers API endpoints failed. The API might be unavailable or require different authentication.');
   }
 }
