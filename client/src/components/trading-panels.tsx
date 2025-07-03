@@ -30,20 +30,20 @@ export default function TradingPanels({
         </div>
       </div>
 
-      {/* Side by Side Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Force Side by Side Layout */}
+      <div className="grid grid-cols-2 gap-4">
         {/* Upper Signals Column */}
-        <div className="flex flex-col">
+        <div className="flex flex-col min-h-0">
           <div className="flex items-center mb-3">
-            <ArrowUp className="text-green-500 mr-2 h-5 w-5" />
-            <h3 className="text-lg font-semibold text-white">Upper BOS/CHOCH - Sell</h3>
+            <ArrowUp className="text-green-500 mr-2 h-4 w-4" />
+            <h3 className="text-sm font-semibold text-white">Upper BOS/CHOCH - Sell</h3>
           </div>
-          <div className="space-y-3 flex-1">
+          <div className="space-y-2 flex-1">
             {upperSignals.length === 0 ? (
-              <Card className="bg-slate-800 border-slate-700 p-6 h-32 flex items-center justify-center">
+              <Card className="bg-slate-800 border-slate-700 p-4 h-24 flex items-center justify-center">
                 <div className="text-center text-slate-400">
-                  <ArrowUp className="h-8 w-8 mx-auto mb-2 text-slate-600" />
-                  <p className="text-sm">No upper signals</p>
+                  <ArrowUp className="h-6 w-6 mx-auto mb-1 text-slate-600" />
+                  <p className="text-xs">No upper signals</p>
                 </div>
               </Card>
             ) : (
@@ -56,7 +56,7 @@ export default function TradingPanels({
                   />
                 ))}
                 {upperSignals.length > 2 && (
-                  <div className="text-center py-2 text-slate-400 text-sm">
+                  <div className="text-center py-1 text-slate-400 text-xs">
                     +{upperSignals.length - 2} more signals
                   </div>
                 )}
@@ -66,17 +66,17 @@ export default function TradingPanels({
         </div>
 
         {/* Lower Signals Column */}
-        <div className="flex flex-col">
+        <div className="flex flex-col min-h-0">
           <div className="flex items-center mb-3">
-            <ArrowDown className="text-red-500 mr-2 h-5 w-5" />
-            <h3 className="text-lg font-semibold text-white">Lower BOS/CHOCH - Buy</h3>
+            <ArrowDown className="text-red-500 mr-2 h-4 w-4" />
+            <h3 className="text-sm font-semibold text-white">Lower BOS/CHOCH - Buy</h3>
           </div>
-          <div className="space-y-3 flex-1">
+          <div className="space-y-2 flex-1">
             {lowerSignals.length === 0 ? (
-              <Card className="bg-slate-800 border-slate-700 p-6 h-32 flex items-center justify-center">
+              <Card className="bg-slate-800 border-slate-700 p-4 h-24 flex items-center justify-center">
                 <div className="text-center text-slate-400">
-                  <ArrowDown className="h-8 w-8 mx-auto mb-2 text-slate-600" />
-                  <p className="text-sm">No lower signals</p>
+                  <ArrowDown className="h-6 w-6 mx-auto mb-1 text-slate-600" />
+                  <p className="text-xs">No lower signals</p>
                 </div>
               </Card>
             ) : (
@@ -89,7 +89,7 @@ export default function TradingPanels({
                   />
                 ))}
                 {lowerSignals.length > 2 && (
-                  <div className="text-center py-2 text-slate-400 text-sm">
+                  <div className="text-center py-1 text-slate-400 text-xs">
                     +{lowerSignals.length - 2} more signals
                   </div>
                 )}

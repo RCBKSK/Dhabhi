@@ -61,8 +61,14 @@ export default function Header({
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Search stocks when query changes
-  const { data: searchResults = [] } = useQuery<Stock[]>({
-    queryKey: ["/api/stocks/search", { q: searchQuery }],
+  const { data: searchResults = [], isLoading: isSearching } = useQuery<Stock[]>({
+    queryKey: ["/api/stocks/search", searchQuery],
+    queryFn: async () => {
+      if (!searchQuery.trim()) return [];
+      const response = await fetch(`/api/stocks/search?q=${encodeURIComponent(searchQuery)}`);
+      if (!response.ok) throw new Error('Search failed');
+      return response.json();
+    },
     enabled: searchQuery.length > 0,
   });
 
@@ -79,8 +85,8 @@ export default function Header({
 
   // Show search results when query is entered
   useEffect(() => {
-    setShowSearchResults(searchQuery.length > 0 && searchResults.length > 0);
-  }, [searchQuery, searchResults]);
+    setShowSearchResults(searchQuery.length > 0);
+  }, [searchQuery]);
 
   const handleTimeframeToggle = (timeframe: string) => {
     if (selectedTimeframes.includes(timeframe)) {
@@ -127,36 +133,47 @@ export default function Header({
             />
             
             {/* Search Results Dropdown */}
-            {showSearchResults && (
+            {(showSearchResults || isSearching) && (
               <Card className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border-slate-600 z-50 max-h-64 overflow-y-auto">
                 <CardContent className="p-2">
-                  {searchResults.map((stock) => (
-                    <div
-                      key={stock.id}
-                      className="p-3 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-600 last:border-b-0"
-                      onClick={() => {
-                        setShowSearchResults(false);
-                        onSearchChange(stock.symbol);
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-medium text-white">{stock.symbol}</span>
-                          <div className="text-sm text-slate-400">
-                            ₹{stock.price.toFixed(2)} • {stock.signalType} Signal
+                  {isSearching ? (
+                    <div className="p-3 text-center text-slate-400">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                      <span className="text-sm">Searching...</span>
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <div className="p-3 text-center text-slate-400">
+                      <span className="text-sm">No stocks found</span>
+                    </div>
+                  ) : (
+                    searchResults.map((stock) => (
+                      <div
+                        key={stock.id}
+                        className="p-3 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-600 last:border-b-0"
+                        onClick={() => {
+                          setShowSearchResults(false);
+                          onSearchChange("");
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-medium text-white">{stock.symbol}</span>
+                            <div className="text-sm text-slate-400">
+                              ₹{stock.price.toFixed(2)} • {stock.signalType} Signal
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <div className={`text-sm font-medium ${stock.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {stock.change >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
-                          </div>
-                          <div className="text-xs text-slate-400">
-                            {stock.distance.toFixed(1)}pts
+                          <div className="text-right">
+                            <div className={`text-sm font-medium ${stock.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {stock.change >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              {stock.distance.toFixed(1)}pts
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </CardContent>
               </Card>
             )}

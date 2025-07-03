@@ -127,17 +127,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/stocks/search", async (req, res) => {
     try {
       const query = (req.query.q as string) || "";
+      console.log('Search request - query:', query);
+      
       if (!query.trim()) {
+        console.log('Empty query, returning empty array');
         return res.json([]);
       }
       
       const allStocks = await storage.getAllStocks();
+      console.log('Total stocks available:', allStocks.length);
+      
       const filteredStocks = allStocks.filter(stock => 
         stock.symbol.toLowerCase().includes(query.toLowerCase())
       );
       
+      console.log('Filtered stocks count:', filteredStocks.length);
+      console.log('Filtered stocks:', filteredStocks.map(s => s.symbol));
+      
       res.json(filteredStocks.slice(0, 10)); // Limit to 10 results
     } catch (error) {
+      console.error('Search error:', error);
       res.status(500).json({ message: "Failed to search stocks" });
     }
   });
