@@ -38,26 +38,34 @@ export class FyersAuth {
   async generateAccessToken(authCode: string): Promise<string> {
     const url = 'https://api-t1.fyers.in/api/v3/validate-authcode';
     
+    const appIdHash = await this.generateAppIdHash();
+    
     const payload = {
       grant_type: 'authorization_code',
-      appIdHash: await this.generateAppIdHash(),
+      appIdHash: appIdHash,
       code: authCode
     };
 
     try {
+      console.log('Authenticating with Fyers API...');
+      console.log('Payload:', { ...payload, appIdHash: 'HIDDEN' });
+      
       const response = await axios.post<FyersTokenResponse>(url, payload, {
         headers: {
           'Content-Type': 'application/json'
         }
       });
 
+      console.log('Fyers auth response:', response.data);
+
       if (response.data.s === 'ok' && response.data.data?.access_token) {
         return response.data.data.access_token;
       } else {
-        throw new Error(`Token generation failed: ${response.data.message}`);
+        throw new Error(`Token generation failed: ${response.data.message || 'Unknown error'}`);
       }
     } catch (error: any) {
-      throw new Error(`Failed to generate access token: ${error.message}`);
+      console.error('Fyers authentication error:', error.response?.data || error.message);
+      throw new Error(`Failed to generate access token: ${error.response?.data?.message || error.message}`);
     }
   }
 
@@ -65,6 +73,7 @@ export class FyersAuth {
     const crypto = await import('crypto');
     const message = `${this.config.clientId}:${this.config.secretKey}`;
     const hash = crypto.createHash('sha256').update(message).digest('hex');
+    console.log('Generated app ID hash for authentication');
     return hash;
   }
 
