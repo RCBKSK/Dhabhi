@@ -11,6 +11,7 @@ import NotificationPanel from "@/components/notification-panel";
 import DeepTrendPanel from "@/components/deep-trend-panel";
 import FyersAuthModal from "@/components/fyers-auth-modal";
 import BulkFavoritesSelector from "@/components/bulk-favorites-selector";
+import StockScreener from "@/components/stock-screener";
 import { Loader2 } from "lucide-react";
 
 export default function Dashboard() {
