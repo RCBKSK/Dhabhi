@@ -222,10 +222,11 @@ class StockDataService {
     const lowVol = ["ITC", "HINDUNILVR", "NESTLEIND", "BRITANNIA", "GODREJCP"];
     const indexVol = ["NIFTY", "BANKNIFTY", "SENSEX"];
 
-    if (highVol.includes(symbol)) return 8;
-    if (lowVol.includes(symbol)) return 3;
-    if (indexVol.includes(symbol)) return 4; // indices have moderate volatility
-    return 5; // medium volatility
+    // Reduced volatility values to achieve 0.2-0.5% distance targets
+    if (highVol.includes(symbol)) return 2.0; // High volatility stocks: 2%
+    if (lowVol.includes(symbol)) return 1.0; // Low volatility stocks: 1%
+    if (indexVol.includes(symbol)) return 0.8; // Indices: 0.8%
+    return 1.5; // Medium volatility stocks: 1.5%
   }
 
   private getIndianCompanyName(symbol: string): string {
@@ -386,7 +387,7 @@ class StockDataService {
 
   private calculateBOSLevel(price: number, isBullish: boolean, atr: number): number {
     // BOS level should be closer to current price with percentage-based calculation
-    const offset = atr * 0.5; // Use half of ATR for BOS level
+    const offset = atr * 0.25; // Use quarter of ATR for BOS level to achieve target distance
     return isBullish ? price + offset : price - offset;
   }
 
