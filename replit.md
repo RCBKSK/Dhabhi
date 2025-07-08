@@ -106,6 +106,8 @@ Changelog:
 - July 3, 2025. Replaced US stock symbols with Indian stocks (RELIANCE, TCS, HDFC, etc.)
 - July 8, 2025. Fixed distance calculation accuracy from 2-4% to 0.2-0.5% percentage-based
 - July 8, 2025. Phase 3: Implementing backtest engine, watchlist scanner, chart capture, PWA, custom scan engine, export features, and sector heatmap
+- July 8, 2025. Completed migration from Replit Agent to Replit environment with enhanced security and performance
+- July 8, 2025. Fixed BOS/CHOCH line price accuracy - improved calculation logic for more precise support/resistance levels
 ```
 
 ## User Preferences

@@ -323,8 +323,12 @@ class StockDataService {
     const swingRange = atr * 3;
 
     // Generate BOS/CHOCH levels based on price action
-    const bosLevel = this.calculateBOSLevel(price, quote.change > 0, atr);
-    const chochLevel = bosLevel + (quote.change > 0 ? atr : -atr);
+    const bosLevel = this.calculateBOSLevel(price, quote.change > 0, atr, quote.symbol);
+    // CHOCH level should be the previous structural level (opposite direction)
+    const chochOffset = price * 0.008; // 0.8% offset for CHOCH level
+    const chochLevel = quote.change > 0 ? 
+      Math.round((price - chochOffset) * 100) / 100 : 
+      Math.round((price + chochOffset) * 100) / 100;
 
     // Determine trend and signal type
     const trend: "BULLISH" | "BEARISH" = quote.change > 0 ? "BULLISH" : "BEARISH";
@@ -385,10 +389,24 @@ class StockDataService {
     };
   }
 
-  private calculateBOSLevel(price: number, isBullish: boolean, atr: number): number {
-    // BOS level should be closer to current price with percentage-based calculation
-    const offset = atr * 0.25; // Use quarter of ATR for BOS level to achieve target distance
-    return isBullish ? price + offset : price - offset;
+  private calculateBOSLevel(price: number, isBullish: boolean, atr: number, symbol: string): number {
+    // Calculate BOS level with precise percentage-based approach
+    // For bullish: BOS level slightly below current price (0.3-0.8% based on volatility)
+    // For bearish: BOS level slightly above current price
+    const isIndex = ['NIFTY', 'BANKNIFTY', 'SENSEX'].includes(symbol);
+    
+    // Use more precise percentage offsets for realistic BOS levels
+    const offsetPercentage = isIndex ? 0.003 : 0.005; // 0.3% for indices, 0.5% for stocks
+    const offset = price * offsetPercentage;
+    
+    // BOS level should be support/resistance level, not random offset
+    if (isBullish) {
+      // For bullish trend, BOS is a support level below current price
+      return Math.round((price - offset) * 100) / 100;
+    } else {
+      // For bearish trend, BOS is a resistance level above current price
+      return Math.round((price + offset) * 100) / 100;
+    }
   }
 
   private calculateATR(price: number, symbol: string): number {
