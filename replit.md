@@ -104,6 +104,8 @@ Changelog:
 - July 3, 2025. Migration from Replit Agent to Replit environment completed
 - July 3, 2025. Integrated Fyers API infrastructure for Indian stock market data (50 major NSE stocks)
 - July 3, 2025. Replaced US stock symbols with Indian stocks (RELIANCE, TCS, HDFC, etc.)
+- July 8, 2025. Fixed distance calculation accuracy from 2-4% to 0.2-0.5% percentage-based
+- July 8, 2025. Phase 3: Implementing backtest engine, watchlist scanner, chart capture, PWA, custom scan engine, export features, and sector heatmap
 ```
 
 ## User Preferences

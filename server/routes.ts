@@ -1,9 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertStockSchema, loginSchema, type TrendQuality } from "@shared/schema";
+import { insertStockSchema, loginSchema, type TrendQuality, backtestConfigSchema, exportConfigSchema } from "@shared/schema";
 import { notificationService } from "./websocket";
 import { stockDataService } from "./stock-service";
+import { BacktestEngine } from "./backtest-engine";
+import { sectorAnalyzer } from "./sector-analysis";
+import { ExportService } from "./export-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -371,6 +374,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Phase 3: Backtest Engine Routes
+  app.post("/api/backtest/run", async (req, res) => {
+    try {
+      const result = backtestConfigSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid backtest configuration", errors: result.error.errors });
+      }
+
+      const config = result.data;
+      const allStocks = await storage.getAllStocks();
+      
+      const backtestEngine = new BacktestEngine(config);
+      const stats = await backtestEngine.runBacktest(allStocks);
+      const trades = backtestEngine.getTrades();
+
+      res.json({ stats, trades });
+    } catch (error) {
+      console.error("Backtest error:", error);
+      res.status(500).json({ message: "Failed to run backtest" });
+    }
+  });
+
+  // Phase 3: Sector Analysis Routes
+  app.get("/api/sectors/analysis", async (req, res) => {
+    try {
+      const stocks = await storage.getAllStocks();
+      const sectorAnalysis = sectorAnalyzer.analyzeSectors(stocks);
+      res.json(sectorAnalysis);
+    } catch (error) {
+      console.error("Sector analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze sectors" });
+    }
+  });
+
+  app.get("/api/sectors/heatmap", async (req, res) => {
+    try {
+      const stocks = await storage.getAllStocks();
+      const sectorAnalysis = sectorAnalyzer.analyzeSectors(stocks);
+      const heatmapData = sectorAnalyzer.generateHeatmapData(sectorAnalysis);
+      res.json(heatmapData);
+    } catch (error) {
+      console.error("Heatmap generation error:", error);
+      res.status(500).json({ message: "Failed to generate heatmap" });
+    }
+  });
+
+  // Phase 3: Export Routes
+  app.post("/api/export/signals", async (req, res) => {
+    try {
+      const result = exportConfigSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid export configuration", errors: result.error.errors });
+      }
+
+      const config = result.data;
+      const stocks = await storage.getAllStocks();
+      const exportData = ExportService.generateExportData(stocks);
+
+      if (config.format === 'CSV') {
+        const csvData = ExportService.generateCSV(exportData);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="signals.csv"');
+        res.send(csvData);
+      } else if (config.format === 'EXCEL') {
+        const excelData = ExportService.generateExcelData(exportData);
+        res.json(excelData);
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      res.status(500).json({ message: "Failed to export data" });
+    }
+  });
+
   const httpServer = createServer(app);
+  notificationService.init(httpServer);
+  
   return httpServer;
 }

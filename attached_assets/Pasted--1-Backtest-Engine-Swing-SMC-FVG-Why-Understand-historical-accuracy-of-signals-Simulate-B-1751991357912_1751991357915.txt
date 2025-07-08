@@ -1,0 +1,123 @@
+✅ 1. Backtest Engine (Swing + SMC/FVG)
+📌 Why: Understand historical accuracy of signals
+
+Simulate BOS/CHOCH entries with FVG or liquidity touch
+
+Auto-track: entry → SL → TP
+
+Configurable RR (1:2, 1:3), ATR-based SL
+
+Output stats:
+
+Win rate
+
+Avg profit/loss
+
+Max drawdown
+
+Strike zone accuracy (distance from BOS/FVG)
+
+🛠 Export to CSV or visualize in modal
+
+✅ 2. Watchlist Signal Scanner
+📌 Why: Users want tighter control
+
+Allow users to create multiple watchlists:
+
+"Midcaps"
+
+"FVG Watch"
+
+"Swing Picks"
+
+Each watchlist gets:
+
+Custom filters (trend match, proximity zones)
+
+Independent scan timer
+
+Signal highlights per list
+
+UI: Tabs or dropdown toggle between watchlists
+
+✅ 3. Auto Screenshot / Chart Capture
+📌 Why: Visual review is faster than raw data
+
+Capture TradingView-style chart for each signal (last 20 candles)
+
+Auto-annotate:
+
+BOS line
+
+CHOCH zone
+
+FVG region
+
+Entry/SL/Target levels
+
+🛠 Option to save as image or embed in modal
+
+✅ 4. PWA / Mobile Optimization
+📌 Why: Monitor and react on the go
+
+Wrap React app as a Progressive Web App
+
+Add “Add to Home Screen” prompt
+
+Mobile UI enhancements:
+
+Stacked cards view
+
+Tabbed screen for favorites / alerts / signals
+
+Touch-based interactions
+
+✅ 5. Custom Scan Engine (per user)
+📌 Why: Traders want custom strategies
+
+Allow users to configure:
+
+Timeframes to scan (e.g., 15m + 1h only)
+
+Distance threshold for BOS/CHOCH
+
+Minimum signal score
+
+Include/exclude FVG/CHOCH types
+
+Save multiple scan profiles
+
+UI: Toggleable scan presets like "Swing Focus", "Volatile", "Index Only"
+
+✅ 6. Export Features
+📌 Why: Traders want offline tracking
+
+Export current signals (filters applied) to CSV or Excel
+
+Include:
+
+Symbol
+
+Trend score
+
+BOS proximity
+
+Signal strength
+
+Last alert time
+
+Option: Auto-download every scan cycle
+
+✅ 7. Heatmap / Sector Breakdown
+📌 Why: See which sectors are active
+
+Add a “Sector Trend View” panel:
+
+NIFTY IT: Bullish (4 TFs)
+
+BANKNIFTY: Mixed (2 Bullish, 2 Bearish)
+
+Visual heatmap: red–neutral–green
+
+Sortable by volume, direction, signal count
+

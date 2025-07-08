@@ -12,6 +12,7 @@ import DeepTrendPanel from "@/components/deep-trend-panel";
 import FyersAuthModal from "@/components/fyers-auth-modal";
 import BulkFavoritesSelector from "@/components/bulk-favorites-selector";
 import StockScreener from "@/components/stock-screener";
+import SectorHeatmap from "@/components/sector-heatmap";
 import { Loader2 } from "lucide-react";
 
 export default function Dashboard() {
@@ -116,6 +117,7 @@ export default function Dashboard() {
         autoRefresh={autoRefresh}
         onToggleAutoRefresh={setAutoRefresh}
         onRefresh={handleRefresh}
+        allStocks={allStocks}
       />
 
       <main className="p-6">
@@ -158,6 +160,11 @@ export default function Dashboard() {
           favoriteStocks={favoriteStocks}
           onToggleFavorite={handleToggleFavorite}
         />
+
+        {/* Phase 3: Sector Heatmap */}
+        <div className="mb-6">
+          <SectorHeatmap />
+        </div>
 
         {/* Deep Trend Analysis Panel - Moved to bottom */}
         <div className="mb-6">

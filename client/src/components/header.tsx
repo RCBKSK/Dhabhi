@@ -1,4 +1,4 @@
-import { Search, RotateCcw, User, LogOut, Zap } from "lucide-react";
+import { Search, RotateCcw, User, LogOut, Zap, BarChart3, Download, List, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +8,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import NotificationPanel from "./notification-panel";
 import FyersAuthModal from "./fyers-auth-modal";
+import BacktestModal from "./backtest-modal";
+import ExportModal from "./export-modal";
+import WatchlistManager from "./watchlist-manager";
 import { useState, useRef, useEffect } from "react";
 import type { Stock } from "@shared/schema";
 
@@ -21,6 +24,7 @@ interface HeaderProps {
   autoRefresh: boolean;
   onToggleAutoRefresh: (enabled: boolean) => void;
   onRefresh: () => void;
+  allStocks: Stock[];
 }
 
 const timeframes = ["5m", "15m", "30m", "45m", "1h", "2h", "4h", "1D"];
@@ -55,10 +59,15 @@ export default function Header({
   autoRefresh,
   onToggleAutoRefresh,
   onRefresh,
+  allStocks,
 }: HeaderProps) {
   const [showFyersAuth, setShowFyersAuth] = useState(false);
+  const [showBacktestModal, setShowBacktestModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showWatchlistManager, setShowWatchlistManager] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   // Search stocks when query changes
   const { data: searchResults = [], isLoading: isSearching } = useQuery({
@@ -244,6 +253,39 @@ export default function Header({
             Enable Live Data
           </Button>
           
+          {/* Phase 3: Action Buttons */}
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={() => setShowBacktestModal(true)}
+              variant="outline"
+              size="sm"
+              className="bg-purple-600 hover:bg-purple-700 text-white border-purple-500"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Backtest
+            </Button>
+            
+            <Button
+              onClick={() => setShowWatchlistManager(true)}
+              variant="outline"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white border-green-500"
+            >
+              <List className="h-4 w-4 mr-2" />
+              Watchlists
+            </Button>
+            
+            <Button
+              onClick={() => setShowExportModal(true)}
+              variant="outline"
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-500"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
+          
           <span className="text-sm text-slate-400">
             Last updated: <span className="text-white">{currentTime}</span>
           </span>
@@ -261,6 +303,24 @@ export default function Header({
       <FyersAuthModal
         isOpen={showFyersAuth}
         onClose={() => setShowFyersAuth(false)}
+      />
+      
+      <BacktestModal
+        isOpen={showBacktestModal}
+        onClose={() => setShowBacktestModal(false)}
+        availableStocks={allStocks}
+      />
+      
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        stocks={allStocks}
+      />
+      
+      <WatchlistManager
+        isOpen={showWatchlistManager}
+        onClose={() => setShowWatchlistManager(false)}
+        userId={user?.id || 1}
       />
     </header>
   );

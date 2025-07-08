@@ -1,4 +1,4 @@
-import { stocks, users, userFavorites, type Stock, type InsertStock, type DashboardStats, type User, type InsertUser } from "@shared/schema";
+import { stocks, users, userFavorites, watchlists, watchlistStocks, scanProfiles, backtestResults, type Stock, type InsertStock, type DashboardStats, type User, type InsertUser, type Watchlist, type InsertWatchlist, type WatchlistStock, type ScanProfile, type InsertScanProfile, type BacktestResult, type InsertBacktestResult } from "@shared/schema";
 import { stockDataService } from "./stock-service";
 import { eq, desc, asc, and, or, sql, count, inArray } from "drizzle-orm";
 
@@ -24,19 +24,47 @@ export interface IStorage {
   // Real-time filtering methods
   getStocksNearBOSCHOCH(proximityPoints: number): Promise<Stock[]>;
   updateStockPrices(): Promise<void>;
+
+  // Phase 3: Watchlist methods
+  getUserWatchlists(userId: number): Promise<Watchlist[]>;
+  createWatchlist(watchlist: InsertWatchlist): Promise<Watchlist>;
+  getWatchlistStocks(watchlistId: number): Promise<Stock[]>;
+  addStockToWatchlist(watchlistId: number, stockId: number): Promise<boolean>;
+
+  // Phase 3: Scan Profile methods
+  getScanProfiles(userId: number): Promise<ScanProfile[]>;
+  createScanProfile(profile: InsertScanProfile): Promise<ScanProfile>;
+
+  // Phase 3: Backtest methods
+  saveBacktestResult(result: InsertBacktestResult): Promise<BacktestResult>;
+  getBacktestResults(userId: number): Promise<BacktestResult[]>;
 }
 
 export class MemStorage implements IStorage {
   private stocks: Map<number, Stock>;
   private users: Map<number, User>;
+  private watchlists: Map<number, Watchlist>;
+  private watchlistStocks: Map<number, WatchlistStock[]>;
+  private scanProfiles: Map<number, ScanProfile[]>;
+  private backtestResults: Map<number, BacktestResult[]>;
   private currentStockId: number;
   private currentUserId: number;
+  private currentWatchlistId: number;
+  private currentScanProfileId: number;
+  private currentBacktestId: number;
 
   constructor() {
     this.stocks = new Map();
     this.users = new Map();
+    this.watchlists = new Map();
+    this.watchlistStocks = new Map();
+    this.scanProfiles = new Map();
+    this.backtestResults = new Map();
     this.currentStockId = 1;
     this.currentUserId = 1;
+    this.currentWatchlistId = 1;
+    this.currentScanProfileId = 1;
+    this.currentBacktestId = 1;
     this.initializeUsers();
     this.initializeWithRealData().catch(() => {
       console.log("Using fallback initialization");
@@ -406,6 +434,82 @@ export class MemStorage implements IStorage {
   async removeBulkFavorites(stockIds: number[], userId: number): Promise<boolean> {
     // Placeholder, implement the actual bulk remove logic
     return true;
+  }
+
+  // Phase 3: Watchlist methods
+  async getUserWatchlists(userId: number): Promise<Watchlist[]> {
+    const userWatchlists = this.scanProfiles.get(userId) || [];
+    return Array.from(this.watchlists.values()).filter(w => w.userId === userId);
+  }
+
+  async createWatchlist(insertWatchlist: InsertWatchlist): Promise<Watchlist> {
+    const id = this.currentWatchlistId++;
+    const watchlist: Watchlist = {
+      ...insertWatchlist,
+      id,
+      createdAt: new Date(),
+    };
+    this.watchlists.set(id, watchlist);
+    return watchlist;
+  }
+
+  async getWatchlistStocks(watchlistId: number): Promise<Stock[]> {
+    const watchlistStockList = this.watchlistStocks.get(watchlistId) || [];
+    const stockIds = watchlistStockList.map(ws => ws.stockId);
+    return Array.from(this.stocks.values()).filter(stock => stockIds.includes(stock.id));
+  }
+
+  async addStockToWatchlist(watchlistId: number, stockId: number): Promise<boolean> {
+    const watchlistStockList = this.watchlistStocks.get(watchlistId) || [];
+    const watchlistStock: WatchlistStock = {
+      id: Date.now(), // Simple ID generation
+      watchlistId,
+      stockId,
+      addedAt: new Date(),
+    };
+    watchlistStockList.push(watchlistStock);
+    this.watchlistStocks.set(watchlistId, watchlistStockList);
+    return true;
+  }
+
+  // Phase 3: Scan Profile methods
+  async getScanProfiles(userId: number): Promise<ScanProfile[]> {
+    return this.scanProfiles.get(userId) || [];
+  }
+
+  async createScanProfile(insertProfile: InsertScanProfile): Promise<ScanProfile> {
+    const id = this.currentScanProfileId++;
+    const profile: ScanProfile = {
+      ...insertProfile,
+      id,
+      createdAt: new Date(),
+    };
+    
+    const userProfiles = this.scanProfiles.get(profile.userId) || [];
+    userProfiles.push(profile);
+    this.scanProfiles.set(profile.userId, userProfiles);
+    
+    return profile;
+  }
+
+  // Phase 3: Backtest methods
+  async saveBacktestResult(insertResult: InsertBacktestResult): Promise<BacktestResult> {
+    const id = this.currentBacktestId++;
+    const result: BacktestResult = {
+      ...insertResult,
+      id,
+      createdAt: new Date(),
+    };
+    
+    const userResults = this.backtestResults.get(result.userId) || [];
+    userResults.push(result);
+    this.backtestResults.set(result.userId, userResults);
+    
+    return result;
+  }
+
+  async getBacktestResults(userId: number): Promise<BacktestResult[]> {
+    return this.backtestResults.get(userId) || [];
   }
 }
 
