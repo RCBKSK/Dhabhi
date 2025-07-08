@@ -318,19 +318,22 @@ class StockDataService {
     const price = quote.lastPrice;
 
     // Simulate SMC analysis with realistic levels
-    const atr = price * 0.02; // 2% ATR approximation
+    const atr = this.calculateATR(price, quote.symbol);
     const swingRange = atr * 3;
 
     // Generate BOS/CHOCH levels based on price action
-    const bosLevel = this.calculateBOSLevel(price, quote.change > 0);
+    const bosLevel = this.calculateBOSLevel(price, quote.change > 0, atr);
     const chochLevel = bosLevel + (quote.change > 0 ? atr : -atr);
 
     // Determine trend and signal type
     const trend: "BULLISH" | "BEARISH" = quote.change > 0 ? "BULLISH" : "BEARISH";
     const distance = Math.abs(price - bosLevel);
 
-    // Only show stocks within 6 points of BOS/CHOCH
-    const hasValidSignal = distance <= 6;
+    // Use percentage-based distance calculation (0.5% for most stocks, 0.2% for indices)
+    const isIndex = ['NIFTY', 'BANKNIFTY', 'SENSEX'].includes(quote.symbol);
+    const maxDistancePercentage = isIndex ? 0.002 : 0.005; // 0.2% for indices, 0.5% for stocks
+    const maxDistance = price * maxDistancePercentage;
+    const hasValidSignal = distance <= maxDistance;
 
     if (!hasValidSignal) {
       return {
@@ -381,9 +384,15 @@ class StockDataService {
     };
   }
 
-  private calculateBOSLevel(price: number, isBullish: boolean): number {
-    const offset = price * 0.003; // 0.3% offset
+  private calculateBOSLevel(price: number, isBullish: boolean, atr: number): number {
+    // BOS level should be closer to current price with percentage-based calculation
+    const offset = atr * 0.5; // Use half of ATR for BOS level
     return isBullish ? price + offset : price - offset;
+  }
+
+  private calculateATR(price: number, symbol: string): number {
+    const volatility = this.getIndianVolatility(symbol);
+    return (price * volatility) / 100;
   }
 
   private generateValidTimeframes(price: number, bosLevel: number): string[] {
@@ -392,7 +401,8 @@ class StockDataService {
 
     // Simulate timeframe analysis - closer to BOS level means more timeframes
     const distance = Math.abs(price - bosLevel);
-    const maxTimeframes = Math.max(2, 7 - Math.floor(distance));
+    const distancePercentage = distance / price;
+    const maxTimeframes = Math.max(2, 7 - Math.floor(distancePercentage * 1000)); // Use percentage-based scaling
 
     for (let i = 0; i < Math.min(maxTimeframes, allTimeframes.length); i++) {
       if (Math.random() > 0.3) { // 70% chance for each timeframe
@@ -401,7 +411,7 @@ class StockDataService {
     }
 
     // Ensure at least 2 timeframes for valid signals
-    if (validTimeframes.length < 2 && distance <= 6) {
+    if (validTimeframes.length < 2 && distance <= (price * 0.005)) {
       validTimeframes.push("5m", "30m");
     }
 
@@ -458,7 +468,9 @@ class StockDataService {
   }
 
   private calculateProximityZone(price: number, bosLevel: number, distance: number): "NEAR_UPPER_BOS" | "NEAR_LOWER_BOS" | "NEUTRAL" {
-    if (distance > 5) return "NEUTRAL";
+    // Use percentage-based proximity (0.3% of price)
+    const proximityThreshold = price * 0.003;
+    if (distance > proximityThreshold) return "NEUTRAL";
 
     if (price > bosLevel) {
       return "NEAR_UPPER_BOS";
@@ -493,7 +505,8 @@ class StockDataService {
       const isPermanentFavorite = ['NIFTY', 'BANKNIFTY', 'SENSEX', 'SBIN', 'RELIANCE', 'TATAMOTORS', 'HCLTECH', 'SUNPHARMA', 'HINDALCO', 'CIPLA'].includes(quote.symbol);
       
       // Only include stocks with valid SMC signals OR if it's an index/permanent favorite
-      if (Math.abs(quote.lastPrice - analysis.bosLevel) <= 15 && analysis.timeframes.length >= 1) {
+      const distanceThreshold = quote.lastPrice * (isIndex ? 0.002 : 0.005); // 0.2% for indices, 0.5% for stocks
+      if (Math.abs(quote.lastPrice - analysis.bosLevel) <= distanceThreshold && analysis.timeframes.length >= 1) {
         analysis.hasValidSignal = true;
       }
 
