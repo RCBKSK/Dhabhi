@@ -1,12 +1,54 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Link, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import Dashboard from "@/pages/dashboard";
+import SMCDashboard from "@/pages/smc-dashboard";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
+import { Activity, BarChart3, LogOut } from "lucide-react";
+
+function Navigation() {
+  const [location] = useLocation();
+  const { logout } = useAuth();
+
+  return (
+    <nav className="bg-card border-b border-border px-6 py-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <h1 className="text-xl font-bold">NSE Stock Monitor</h1>
+          <div className="flex items-center space-x-2">
+            <Link href="/">
+              <Button 
+                variant={location === "/" ? "default" : "ghost"} 
+                size="sm"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Classic Dashboard
+              </Button>
+            </Link>
+            <Link href="/smc">
+              <Button 
+                variant={location === "/smc" ? "default" : "ghost"} 
+                size="sm"
+              >
+                <Activity className="w-4 h-4 mr-2" />
+                SMC Dashboard
+              </Button>
+            </Link>
+          </div>
+        </div>
+        <Button variant="ghost" size="sm" onClick={logout}>
+          <LogOut className="w-4 h-4 mr-2" />
+          Logout
+        </Button>
+      </div>
+    </nav>
+  );
+}
 
 function Router() {
   const { isAuthenticated, isLoading, login } = useAuth();
@@ -27,10 +69,14 @@ function Router() {
   }
 
   return (
-    <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      <Navigation />
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/smc" component={SMCDashboard} />
+        <Route component={NotFound} />
+      </Switch>
+    </>
   );
 }
 
@@ -38,7 +84,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen bg-slate-900 text-slate-100">
+        <div className="min-h-screen bg-background text-foreground">
           <Toaster />
           <Router />
         </div>

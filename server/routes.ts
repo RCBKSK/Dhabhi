@@ -8,6 +8,7 @@ import { BacktestEngine } from "./backtest-engine";
 import { sectorAnalyzer } from "./sector-analysis";
 import { ExportService } from "./export-service";
 import { createMarketStructureAnalyzer, type Candle, type MarketStructureAnalysis } from "./market-structure-analyzer";
+import { batchSMCAnalyzer, type BatchSMCAnalysisResult, type StockSMCResult } from "./batch-smc-analyzer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -486,6 +487,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get pre-computed batch analysis results (cached)
+  app.get("/api/market-structure/dashboard", async (req, res) => {
+    try {
+      // Get popular stocks for analysis
+      const popularStocks = [
+        "RELIANCE", "TCS", "HDFCBANK", "BHARTIARTL", "ICICIBANK", 
+        "INFY", "HINDUNILVR", "MARUTI", "KOTAKBANK", "BAJFINANCE",
+        "LT", "HCLTECH", "AXISBANK", "ASIANPAINT", "WIPRO",
+        "NTPC", "ULTRACEMCO", "TITAN", "NESTLEIND", "TATAMOTORS",
+        "SUNPHARMA", "JSWSTEEL", "TATASTEEL", "BRITANNIA", "CIPLA"
+      ];
+      
+      console.log("Running dashboard batch analysis...");
+      const result = await batchSMCAnalyzer.analyzeBatch(popularStocks);
+      
+      res.json({
+        ...result,
+        refreshInterval: 120000, // 2 minutes in milliseconds
+        lastRefresh: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Dashboard analysis error:", error);
+      res.status(500).json({ message: "Failed to generate dashboard data" });
+    }
+  });
+
+  // Get popular Indian stocks for batch analysis
+  app.get("/api/market-structure/popular-stocks", async (req, res) => {
+    try {
+      const popularStocks = [
+        "RELIANCE", "TCS", "HDFCBANK", "BHARTIARTL", "ICICIBANK", 
+        "SBIN", "LICI", "INFY", "HINDUNILVR", "MARUTI",
+        "KOTAKBANK", "BAJFINANCE", "LT", "HCLTECH", "AXISBANK",
+        "ASIANPAINT", "WIPRO", "ADANIENT", "NTPC", "ULTRACEMCO",
+        "ONGC", "TITAN", "POWERGRID", "NESTLEIND", "BAJAJFINSV",
+        "COALINDIA", "TECHM", "TATAMOTORS", "SUNPHARMA", "ADANIPORTS",
+        "DIVISLAB", "JSWSTEEL", "DRREDDY", "GRASIM", "TATASTEEL",
+        "HINDALCO", "BRITANNIA", "CIPLA", "HEROMOTOCO", "BAJAJ-AUTO",
+        "APOLLOHOSP", "INDUSINDBK", "EICHERMOT", "TATACONSUM", "BPCL",
+        "GODREJCP", "NIFTY", "BANKNIFTY", "SENSEX"
+      ];
+      
+      res.json({ 
+        symbols: popularStocks,
+        count: popularStocks.length,
+        description: "Popular Indian stocks and indices for SMC analysis"
+      });
+    } catch (error) {
+      console.error("Error fetching popular stocks:", error);
+      res.status(500).json({ message: "Failed to fetch popular stocks" });
+    }
+  });
+
   // Quick structure analysis for a single symbol with mock data (for testing)
   app.get("/api/market-structure/:symbol", async (req, res) => {
     try {
@@ -531,6 +585,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to analyze symbol structure" });
     }
   });
+
+  // Batch SMC Analysis Routes
+  app.post("/api/market-structure/batch-analyze", async (req, res) => {
+    try {
+      const { symbols } = req.body;
+      
+      if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
+        return res.status(400).json({ 
+          message: "Invalid symbols data. Provide an array of stock symbols (e.g., ['RELIANCE', 'TCS', 'INFY'])" 
+        });
+      }
+
+      if (symbols.length > 50) {
+        return res.status(400).json({ 
+          message: "Too many symbols. Maximum 50 symbols allowed per batch." 
+        });
+      }
+
+      console.log(`Starting batch SMC analysis for ${symbols.length} symbols:`, symbols);
+      
+      const result = await batchSMCAnalyzer.analyzeBatch(symbols);
+      
+      console.log(`Batch analysis completed. Found ${result.stocks.length} stocks with valid signals out of ${result.metadata.totalStocksAnalyzed} analyzed.`);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Batch SMC analysis error:", error);
+      res.status(500).json({ message: "Failed to perform batch SMC analysis" });
+    }
+  });
+
+
 
   const httpServer = createServer(app);
   notificationService.init(httpServer);
