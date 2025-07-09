@@ -1,0 +1,87 @@
+Phase 3.5 – Accuracy Refinement Plan
+1. 📐 Improve Swing Detection Logic
+✅ Problem: Fixed pivot lookback (e.g. 20 bars) may miss cleaner swing points in volatile or flat conditions.
+
+🔧 Solution:
+
+Make swing high/low detection dynamic:
+
+Use ATR to define lookback window adaptively (e.g. tighter in low-volatility, wider in high-volatility zones)
+
+Or use a percentage range from recent price for pivot validation
+
+📊 Impact: Reduces false swings → cleaner BOS/CHOCH chain
+
+2. 📏 BOS/CHOCH Thresholding
+✅ Problem: Minor breakouts sometimes falsely trigger BOS or CHOCH
+
+🔧 Solution:
+
+Add buffer threshold to BOS/CHOCH validation:
+
+e.g. Only count BOS if close breaks swing high by 0.2–0.5%
+
+Optionally validate BOS/CHOCH only if candle closes above/below with volume
+
+📊 Impact: Filters out noise, improves structural reliability
+
+3. 🧠 BOS/CHOCH Chain Validity
+✅ Problem: BOS/CHOCH flips back and forth during chop
+
+🔧 Solution:
+
+Track a minimum distance from last BOS before allowing opposite CHOCH
+
+Lock structure direction for X bars unless major reversal detected (trend stability)
+
+Add structure confidence score based on trend duration
+
+📊 Impact: Prevents overreaction to minor reversals
+
+4. 📦 Fair Value Gap (FVG) Enhancements
+✅ Problem: All valid FVGs treated equally
+
+🔧 Solution:
+
+Assign score to FVG based on:
+
+Gap size (larger gaps = stronger imbalance)
+
+Occurrence near structure change (CHOCH/FVG combo = more reliable)
+
+Recency of FVG
+
+Prune old or filled FVGs
+
+📊 Impact: Cleaner proximity logic and fewer false FVG matches
+
+5. 📉 Trend Confirmation Filters
+✅ Problem: BOS/CHOCH doesn’t always mean price will continue
+
+🔧 Solution:
+
+Confirm structure with:
+
+EMA slope across timeframes
+
+Price > or < VWAP or midline
+
+Strong candle momentum (long bodies, volume spike)
+
+📊 Impact: Confirms market intention behind BOS
+
+6. 📊 Backtest Accuracy Feedback Loop
+✅ Problem: No audit of signal quality over time
+
+🔧 Solution:
+
+Add backend tracker:
+
+Record when BOS/CHOCH is generated
+
+Track future movement vs SL/TP levels
+
+Auto-tag outcome (hit TP, hit SL, neutral)
+
+📊 Impact: Use real results to optimize thresholds over time
+

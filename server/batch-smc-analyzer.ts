@@ -87,7 +87,8 @@ export class BatchSMCAnalyzer {
       // Analyze each timeframe
       for (const timeframe of this.timeframes) {
         const candles = await this.generateCandleData(symbol, timeframe);
-        const analyzer = createMarketStructureAnalyzer(20, 0.2);
+        // Phase 3.5 enhanced analyzer with improved thresholds and validation
+        const analyzer = createMarketStructureAnalyzer(20, 0.2, 0.3, 0.5, 1.0, 5);
         const analysis = analyzer.analyzeMarketStructure(candles);
         
         // Determine if this timeframe has a valid signal

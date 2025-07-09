@@ -110,6 +110,7 @@ Changelog:
 - July 8, 2025. Fixed BOS/CHOCH line price accuracy - improved calculation logic for more precise support/resistance levels
 - July 9, 2025. Built comprehensive Market Structure Analyzer module with swing point detection, BOS/CHOCH analysis, and Fair Value Gap identification
 - July 9, 2025. Added API endpoints for real-time market structure analysis with configurable parameters (lookback window, FVG size threshold)
+- July 9, 2025. Phase 3.5: Implemented accuracy refinement plan with dynamic ATR-based swing detection, enhanced BOS/CHOCH thresholding (0.3%/0.5%), structure validation with distance requirements (1.0%), and improved FVG quality scoring system
 ```
 
 ## User Preferences
