@@ -1,12 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertStockSchema, loginSchema, type TrendQuality, backtestConfigSchema, exportConfigSchema } from "@shared/schema";
+import { insertStockSchema, loginSchema, type TrendQuality, backtestConfigSchema, exportConfigSchema, marketStructureAnalysisSchema } from "@shared/schema";
 import { notificationService } from "./websocket";
 import { stockDataService } from "./stock-service";
 import { BacktestEngine } from "./backtest-engine";
 import { sectorAnalyzer } from "./sector-analysis";
 import { ExportService } from "./export-service";
+import { createMarketStructureAnalyzer, type Candle, type MarketStructureAnalysis } from "./market-structure-analyzer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -444,6 +445,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Export error:", error);
       res.status(500).json({ message: "Failed to export data" });
+    }
+  });
+
+  // Market Structure Analysis Routes
+  app.post("/api/market-structure/analyze", async (req, res) => {
+    try {
+      const result = marketStructureAnalysisSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid market structure data", 
+          errors: result.error.errors 
+        });
+      }
+
+      const { candles, lookbackWindow, minFVGSize } = result.data;
+
+      const validCandles: Candle[] = candles.map(candle => ({
+        ...candle,
+        timestamp: new Date(candle.timestamp)
+      }));
+
+      const analyzer = createMarketStructureAnalyzer(lookbackWindow, minFVGSize);
+      const analysis = analyzer.analyzeMarketStructure(validCandles);
+      const events = analyzer.getAllEvents();
+
+      res.json({
+        analysis,
+        events,
+        metadata: {
+          totalCandles: validCandles.length,
+          analyzedCandles: validCandles.length,
+          lookbackWindow,
+          minFVGSize
+        }
+      });
+    } catch (error) {
+      console.error("Market structure analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze market structure" });
+    }
+  });
+
+  // Quick structure analysis for a single symbol with mock data (for testing)
+  app.get("/api/market-structure/:symbol", async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const { period = '1h', lookback = '20' } = req.query;
+
+      // Generate mock candle data for testing
+      const now = new Date();
+      const basePrice = 100 + Math.random() * 900; // Random base price between 100-1000
+      const candles: Candle[] = [];
+
+      for (let i = 99; i >= 0; i--) {
+        const timestamp = new Date(now.getTime() - (i * 60 * 60 * 1000)); // Hourly candles
+        const open = basePrice + (Math.random() - 0.5) * 20;
+        const volatility = 0.02; // 2% volatility
+        
+        const high = open + Math.random() * (open * volatility);
+        const low = open - Math.random() * (open * volatility);
+        const close = low + Math.random() * (high - low);
+
+        candles.push({
+          open: Math.round(open * 100) / 100,
+          high: Math.round(high * 100) / 100,
+          low: Math.round(low * 100) / 100,
+          close: Math.round(close * 100) / 100,
+          volume: Math.floor(Math.random() * 1000000),
+          timestamp
+        });
+      }
+
+      const analyzer = createMarketStructureAnalyzer(parseInt(lookback as string));
+      const analysis = analyzer.analyzeMarketStructure(candles);
+
+      res.json({
+        symbol,
+        period,
+        analysis,
+        candleCount: candles.length,
+        disclaimer: "This is generated test data for demonstration purposes"
+      });
+    } catch (error) {
+      console.error("Symbol structure analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze symbol structure" });
     }
   });
 

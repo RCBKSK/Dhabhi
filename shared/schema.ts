@@ -237,3 +237,62 @@ export type ExportData = {
   timeframes: string[];
   lastAlertTime: string;
 };
+
+// Market Structure Analysis Types
+export type MarketStructureCandle = {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  timestamp: Date;
+};
+
+export type SwingPoint = {
+  index: number;
+  price: number;
+  type: 'high' | 'low';
+  timestamp: Date;
+};
+
+export type BOSCHOCHEvent = {
+  type: 'BOS' | 'CHOCH';
+  direction: 'bullish' | 'bearish';
+  price: number;
+  timestamp: Date;
+  brokenLevel: number;
+  significance: 'minor' | 'major';
+};
+
+export type FairValueGap = {
+  id: string;
+  upperBound: number;
+  lowerBound: number;
+  sizePercentage: number;
+  timestamp: Date;
+  direction: 'bullish' | 'bearish';
+  isMitigated: boolean;
+  mitigatedAt?: Date;
+};
+
+export type MarketStructureAnalysis = {
+  currentStructure: 'Bullish' | 'Bearish' | 'Bullish (CHoCH)' | 'Bearish (CHoCH)' | 'Neutral';
+  lastBOSCHOCH: BOSCHOCHEvent | null;
+  activeFVGs: FairValueGap[];
+  recentSwingPoints: SwingPoint[];
+  trendStrength: number;
+  structureConfidence: number;
+};
+
+export const marketStructureAnalysisSchema = z.object({
+  candles: z.array(z.object({
+    open: z.number(),
+    high: z.number(),
+    low: z.number(),
+    close: z.number(),
+    volume: z.number(),
+    timestamp: z.string().or(z.date())
+  })),
+  lookbackWindow: z.number().min(5).max(50).optional().default(20),
+  minFVGSize: z.number().min(0.1).max(5.0).optional().default(0.2)
+});
